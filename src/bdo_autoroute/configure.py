@@ -19,9 +19,9 @@ from .settings import (
     CONFIG,
     EXAMPLE_CONFIG,
     SCREENSHOT_MODES,
-    WEBHOOK_PREFIX,
     Settings,
     is_webhook,
+    webhook_hosts_in_words,
 )
 from .vault import available, protected, scrubbed
 
@@ -37,6 +37,19 @@ SCREENSHOT_EXPLAINED = {
     "marker": "Just the marker, no chat, safe for shared servers",
     "none": "Text only",
 }
+
+
+def _not_a_webhook() -> str:
+    """One wording for the two places that reject a URL.
+
+    Naming only discord.com told people something narrower than the truth,
+    since a discordapp.com webhook validates and works.
+    """
+    return (
+        "That does not look like a webhook URL.\n"
+        f"They start with https://{webhook_hosts_in_words()},\n"
+        "followed by /api/webhooks/"
+    )
 
 
 def ensure_config(path: Path = CONFIG) -> Path:
@@ -261,7 +274,7 @@ class SettingsWindow:
             if not webhook:
                 return "Discord needs a webhook URL, or untick Discord."
             if not is_webhook(webhook):
-                return f"That does not look like a webhook URL.\nThey start with {WEBHOOK_PREFIX}"
+                return _not_a_webhook()
 
         for label, variable in (
             ("Check every", self._poll),
@@ -281,9 +294,7 @@ class SettingsWindow:
 
         webhook = self._webhook.get().strip()
         if not is_webhook(webhook):
-            messagebox.showwarning(
-                "Test", f"That does not look like a webhook URL.\nThey start with {WEBHOOK_PREFIX}"
-            )
+            messagebox.showwarning("Test", _not_a_webhook())
             return
         try:
             sent = Discord(webhook, self._mention.get().strip()).deliver(Alert.test_message())

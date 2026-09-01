@@ -2,6 +2,19 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.2 (2026-09-01)
+
+### Fixed
+
+- **The 0.4.1 changelog entry about escaping lost its own escapes**, so it
+  rendered as an empty code span with a real newline and a real tab inside it.
+- **The settings dialog named one webhook host** while four are accepted, so it
+  told people something narrower than the truth about a `discordapp.com` URL
+  that validates and works.
+- **A rejected webhook produced a second message saying the setting was
+  "empty in config.toml"**, which is not what the file said. It now
+  distinguishes unset from rejected and points at the line that explains which.
+
 ## 0.4.1 (2026-09-01)
 
 A second review pass over 0.4.0, which found that the occlusion fix closed half
@@ -24,8 +37,7 @@ the hole and two of the 0.3.1 fixes were regressions.
   0.3.1 swapped `notepad.exe` for `os.startfile` to fix a working-directory
   hijack, which needs a registered handler. It falls back to Notepad by
   absolute path.
-- `as_toml` escaped only ``, `
-` and `	`. TOML forbids all of C0 and
+- `as_toml` escaped only `\r`, `\n` and `\t`. TOML forbids all of C0 and
   `U+007F`, so a form feed or a stray NUL still wrote a file that would not
   parse.
 - `Window.obscured` returned "not covered" when it could not tell, while its

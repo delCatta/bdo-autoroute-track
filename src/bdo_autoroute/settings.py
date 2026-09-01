@@ -48,6 +48,16 @@ def is_webhook(url: str) -> bool:
     """Whether a URL points at a Discord webhook on a host we recognise."""
     return any(url.startswith(host) for host in WEBHOOK_HOSTS)
 
+
+def webhook_hosts_in_words() -> str:
+    """The accepted hosts, for a message a person has to read.
+
+    Naming only discord.com told people something narrower than the truth,
+    since a discordapp.com URL validates perfectly well.
+    """
+    hosts = [host.split("/api/")[0].removeprefix("https://") for host in WEBHOOK_HOSTS]
+    return ", ".join(hosts[:-1]) + " or " + hosts[-1]
+
 # How wide a whole-frame sample may be once notify.screenshot says the full
 # window is too much to share. Wide enough to stay useful as a negative example
 # for template matching, narrow enough that chat and a character name are not

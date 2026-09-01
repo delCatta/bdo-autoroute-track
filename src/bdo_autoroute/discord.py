@@ -48,8 +48,11 @@ class Discord:
     def __post_init__(self) -> None:
         if not self.webhook_url:
             raise NotifyError(
-                "notify.discord_webhook_url is empty in config.toml. Create one "
-                "under Channel > Edit Channel > Integrations > Webhooks."
+                "No Discord webhook to send to. Either "
+                "notify.discord_webhook_url is unset in config.toml, or it was "
+                "rejected for not pointing at Discord, which is logged on its "
+                "own line above. Create one under Channel > Edit Channel > "
+                "Integrations > Webhooks."
             )
         self._session = requests.Session()
 
