@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bdo-autoroute-track"
-version = "0.2.0"
+version = "0.3.0"
 description = "Watch the Black Desert Online auto-route marker and get alerted on arrival, a stall, or a lost route."
 readme = "README.md"
 license = { file = "LICENSE" }
