@@ -102,3 +102,45 @@ class TestFresh:
         trip.update(560, now=0)
         trip.update(None, now=30)
         assert trip.update(540, now=60).fresh
+
+
+class TestStaleWording:
+    def report(self, capsys, updates):
+        import logging
+
+        from PIL import Image
+
+        from bdo_autoroute.marker import Offset
+        from bdo_autoroute.monitor import Monitor
+        from bdo_autoroute.observation import Observation
+        from bdo_autoroute.settings import Calibration, Settings
+
+        logging.basicConfig(level=logging.INFO, force=True)
+        watcher = Monitor(
+            Settings(samples_enabled=False),
+            Calibration(Offset(-86, 0, 83, 14), 3440, 1440, "icon_template.png"),
+            readout=None,
+            outbox=None,
+            voyage=None,
+        )
+        trip = voyage()
+        lines = []
+        for distance, moment in updates:
+            status = trip.update(distance, now=moment)
+            captured = []
+            watcher._report(status, Observation(Image.new("RGB", (4, 4))))
+            lines.append(status)
+        return lines
+
+    def test_a_distance_that_never_existed_is_not_called_last_known(self):
+        trip = voyage()
+        status = trip.update(None, now=0)
+        assert status.distance_m is None
+        assert not status.fresh
+
+    def test_a_carried_over_distance_is_marked(self):
+        trip = voyage()
+        trip.update(560, now=0)
+        status = trip.update(None, now=30)
+        assert status.distance_m == 560
+        assert not status.fresh

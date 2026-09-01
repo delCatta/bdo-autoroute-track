@@ -373,7 +373,10 @@ class Monitor:
         # "not seen".
         detail = ""
         if not status.fresh:
-            distance += " (last known)"
+            # Nothing has ever been read, so there is no last known value to
+            # carry over and nothing to qualify.
+            if status.distance_m is not None:
+                distance += " (last known)"
             detail = f"  match={observation.confidence:.2f} raw={observation.raw_text!r}"
         if observation.near_indicator:
             detail += "  [readout is red]"
