@@ -1,19 +1,40 @@
-# BDO Barter Boat Monitor
+# BDO Boat Monitor
 
-> Resuming this project later? Start with [HANDOFF.md](HANDOFF.md) - it carries
-> the design decisions, the domain facts learned from the game, and the bugs
-> found in live testing that must not be reintroduced.
+**Stop alt-tabbing back every ten minutes to check your barter boat.**
 
 Watches the **remaining-distance readout** on Black Desert Online's auto-route
-marker and pings you on Discord — with a screenshot — when your barter boat
-**arrives**, gets **stuck**, or **disappears** (client crash or disconnect).
+marker and pings you on Discord — with a screenshot — when your boat
+**arrives**, gets **stuck** on terrain, or **disappears** (client crash or
+disconnect).
+
+```
+21:04:12  SAILING     distance=3970m   eta=18m 20s  stalled=0s
+21:11:12  STUCK       distance=2140m   eta=-        stalled=3m 0s   -> Discord ping
+```
+
+**Requirements: Windows 10/11, Python 3.11+, and Black Desert in Borderless
+Windowed mode.** It reads the screen, so it is Windows-only by design — window
+capture uses the Windows Graphics Capture API.
+
+It is **read-only**: it takes screenshots and tells you things. It never reads
+game memory, injects anything, or sends input. See
+[Scope and safety](#scope-and-safety) before using it.
+
+### Quick start
+
+```powershell
+.\setup.ps1        # venv + dependencies
+                   # then put your Discord webhook in config.toml
+.\calibrate.ps1    # box the distance digits, then the icon
+.\run.ps1          # go AFK
+```
 
 Built because nothing else does this. Barter trackers like
 [BDO Life Companion](https://github.com/kurohige/BdoLifeCompanion-Pub) are
 manual-entry only, and BDO OCR projects like
 [BDO Loot Tracker](https://github.com/janhnguyen/BDO-Loot-Tracker) read loot, not
-navigation. The usual advice for AFK sailing is "alt-tab back every ten minutes."
-This does that for you.
+navigation. The standard advice for AFK sailing is still "check back every ten
+minutes" — this does that for you.
 
 ## How it works
 

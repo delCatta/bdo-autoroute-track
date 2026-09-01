@@ -1,7 +1,8 @@
-# Handoff — BDO Barter Boat Monitor
+# Handoff — BDO Boat Monitor
 
-Context for resuming this project in a fresh session. Written 2026-09-01.
-Read this plus [README.md](README.md) and you have the whole picture.
+Engineering context for anyone picking this up: why it is built the way it is,
+and which obvious-looking assumptions are provably wrong. Read this before
+changing how frames are captured or read. Written 2026-09-01.
 
 ---
 
