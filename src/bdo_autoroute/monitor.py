@@ -32,13 +32,19 @@ log = logging.getLogger("bdo_autoroute")
 
 @dataclass
 class Timer:
-    """Something that should not happen more often than every `interval`."""
+    """Something that should not happen more often than every `interval`.
+
+    `last_at` is None rather than 0.0 for "never fired": a timer marked at
+    monotonic time zero would otherwise read as never having fired at all.
+    """
 
     interval: float
-    last_at: float = 0.0
+    last_at: float | None = None
 
     def due(self, now: float) -> bool:
-        return bool(self.interval) and (not self.last_at or now - self.last_at >= self.interval)
+        if not self.interval:
+            return False
+        return self.last_at is None or now - self.last_at >= self.interval
 
     def mark(self, now: float) -> None:
         self.last_at = now
@@ -71,6 +77,7 @@ class Monitor:
         self._stopping = False
         self._warned_blank = False
         self._heartbeat = Timer(settings.heartbeat_seconds)
+        self._last_heartbeat_distance: float | None = None
         self._nagging = Timer(settings.stuck_realert_seconds)
         self._archive = Archive(
             root=samples_dir or Path("samples"),
@@ -142,10 +149,18 @@ class Monitor:
         )
 
     def _announce(self, status: Status, frame: Image.Image, now: float) -> None:
+        if status.approaching:
+            self._send(Alert.approaching(status), frame)
+        if status.stalling:
+            self._send(Alert.stalling(status), frame)
+
         if status.changed:
             if status.stuck:
                 self._nagging.mark(now)
-            self._send(Alert.for_event(status.event, urgent_states=self._settings.urgent_states), frame)
+            self._send(
+                Alert.for_event(status.event, urgent_states=self._settings.urgent_states),
+                frame,
+            )
             return
 
         if status.stuck:
@@ -154,9 +169,31 @@ class Monitor:
                 self._send(Alert.still_stuck(status), frame)
             return
 
-        if status.travelling and self._heartbeat.due(now):
-            self._heartbeat.mark(now)
+        if status.travelling and self._worth_a_heartbeat(status, now):
             self._send(Alert.heartbeat(status), frame)
+
+    def _worth_a_heartbeat(self, status: Status, now: float) -> bool:
+        """Due by the clock, and only after real ground has been covered.
+
+        A heartbeat every minute would otherwise repeat the same number while
+        the route crawls or the boat sits still.
+        """
+        if not self._heartbeat.due(now):
+            return False
+        if status.distance_m is None:
+            return False
+
+        covered = (
+            self._settings.heartbeat_min_progress_m
+            if self._last_heartbeat_distance is None
+            else self._last_heartbeat_distance - status.distance_m
+        )
+        if covered < self._settings.heartbeat_min_progress_m:
+            return False
+
+        self._heartbeat.mark(now)
+        self._last_heartbeat_distance = status.distance_m
+        return True
 
     def _nothing_to_see(self, reason: str, *, minimised: bool = False) -> None:
         status = self._voyage.update(None, time.monotonic())
@@ -275,4 +312,6 @@ def build_voyage(settings: Settings) -> Voyage:
         missing_confirm_polls=settings.missing_confirm_polls,
         near_arrival_m=settings.near_arrival_m,
         arrival_confirm_polls=settings.arrival_confirm_polls,
+        approaching_m=settings.approaching_m,
+        stalling_after_seconds=settings.stalling_after_seconds,
     )

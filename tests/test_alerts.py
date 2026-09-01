@@ -86,6 +86,26 @@ class TestHeartbeat:
         assert "2140m" in Alert.heartbeat(status(State.TRAVELLING)).body
 
 
+class TestApproaching:
+    def test_approaching_is_urgent(self):
+        assert Alert.approaching(status(State.TRAVELLING, distance_m=480.0)).urgent
+
+    def test_approaching_says_how_far_is_left(self):
+        alert = Alert.approaching(status(State.TRAVELLING, distance_m=480.0))
+        assert alert.headline == "Approaching destination"
+        assert "480m" in alert.body
+
+
+class TestStalling:
+    def test_stalling_is_urgent(self):
+        assert Alert.stalling(status(stalled_seconds=60.0)).urgent
+
+    def test_stalling_says_it_is_not_yet_stuck(self):
+        alert = Alert.stalling(status(stalled_seconds=60.0))
+        assert alert.headline == "Progress has stalled"
+        assert "not yet" in alert.body.lower()
+
+
 class TestColour:
     def test_colour_differs_between_good_and_bad_news(self):
         arrived = Alert.for_event(event(State.ARRIVED), urgent_states=URGENT)

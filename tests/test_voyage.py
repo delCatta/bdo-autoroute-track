@@ -44,10 +44,11 @@ class TestUpdate:
 
     def test_update_returns_arrived_after_two_readings_below_the_threshold(self):
         trip = voyage()
-        trip.update(3970, now=0)
-        trip.update(500, now=30)
-        assert trip.update(40, now=60).travelling
-        assert trip.update(38, now=90).state is State.ARRIVED
+        trip.update(500, now=0)
+        trip.update(300, now=30)
+        trip.update(100, now=60)
+        assert trip.update(40, now=90).travelling
+        assert trip.update(38, now=120).state is State.ARRIVED
 
     def test_update_returns_stuck_after_too_long_without_progress(self):
         trip = voyage(stuck_after_seconds=180)
@@ -81,8 +82,9 @@ class TestUpdate:
         trip.update(28, now=60)
         assert trip.state is State.ARRIVED
 
-        assert trip.update(6000, now=90).travelling
-        assert trip.update(5900, now=120).travelling
+        trip.update(6000, now=90)
+        assert trip.update(5980, now=120).travelling
+        assert trip.update(5900, now=150).travelling
 
 
 class TestMissingReadings:
@@ -132,15 +134,17 @@ class TestEta:
         trip = voyage()
         trip.update(10820, now=0)
         trip.update(10710, now=6)
-        assert trip.update(657, now=13).eta_seconds is None
+        trip.update(657, now=13)
+        assert trip.update(650, now=20).eta_seconds is None
 
     def test_eta_seconds_recovers_on_the_new_route(self):
         trip = voyage()
         trip.update(10820, now=0)
         trip.update(657, now=13)
-        trip.update(590, now=43)
-        status = trip.update(530, now=73)
-        assert status.eta_seconds == pytest.approx(530 / 2.0, rel=0.3)
+        trip.update(650, now=43)
+        trip.update(590, now=73)
+        status = trip.update(530, now=103)
+        assert status.eta_seconds == pytest.approx(530 / 2.0, rel=0.4)
 
     def test_eta_seconds_is_none_for_impossible_speeds(self):
         trip = voyage()

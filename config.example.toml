@@ -18,7 +18,8 @@ title_matches = ["Black Desert"]
 method = "window"
 
 # How often to read the remaining-distance number, in seconds.
-# Faster than the 5 min heartbeat so a stuck boat is caught early.
+# Every poll is a chance to notice a stall, so keep this well under
+# detect.stalling_after_seconds.
 poll_interval_seconds = 30
 
 [detect]
@@ -31,7 +32,8 @@ arrival_threshold_m = 70.0
 movement_epsilon_m = 15.0
 
 # If the distance has not dropped by movement_epsilon_m for this long, the
-# boat is considered stuck. 180s = 6 polls at the default interval.
+# route is considered properly stuck. You get the earlier one-off warning
+# at stalling_after_seconds regardless.
 stuck_after_seconds = 180
 
 # Once stuck, don't re-alert more often than this.
@@ -44,6 +46,15 @@ stuck_realert_minutes = 10
 #                                                disconnected, or UI hidden)
 missing_confirm_polls = 4
 near_arrival_m = 400.0
+
+# Early warnings, so you hear about things while you can still act on them.
+# A one-off alert the first time the distance drops below this, or the first
+# time the readout turns red. 0 disables it.
+approaching_m = 500.0
+
+# A one-off alert the first time progress stalls for this long. Well before
+# stuck_after_seconds, which is the confirmed, nagging version.
+stalling_after_seconds = 60
 
 # How many consecutive readings at or below arrival_threshold_m are needed
 # before declaring arrival. A single OCR misread once turned 1169 into 9, which
@@ -58,9 +69,13 @@ discord_webhook_url = ""
 # Attach a full-window screenshot to every alert so you can see what happened.
 attach_screenshot = true
 
-# Routine "still sailing" update with a screenshot, in minutes. 0 disables it
-# and you will only be pinged on ARRIVED / STUCK / SIGNAL_LOST.
-heartbeat_minutes = 5
+# Routine "still under way" update with a screenshot, in minutes. 0 disables it
+# and you only hear about arrivals, stalls and lost routes.
+heartbeat_minutes = 1
+
+# ...but only once this much ground has been covered since the last one. Keeps
+# a 1-minute heartbeat from repeating the same number while the route crawls.
+heartbeat_min_progress_m = 150.0
 
 # Prefix alerts with a Discord mention so your phone actually buzzes.
 # Use "<@YOUR_USER_ID>" for a DM-style ping, or "@here". Empty = no ping.
@@ -121,7 +136,7 @@ retain_days = 7
 samples_enabled = true
 
 # Per-category ceiling. Oldest are evicted first once a category is full.
-# Categories: unparsed, no_marker, low_conf, red, ok
+# Categories: unparsed, no_marker, low_confidence, red, ordinary
 samples_max_per_category = 200
 
 # Ordinary successful reads are throttled to one per this many minutes.

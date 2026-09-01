@@ -25,6 +25,7 @@ from .window import Window, blank, capture_for
 log = logging.getLogger("bdo_autoroute")
 
 CAPTURES = ROOT / "captures"
+LOGS = ROOT / "logs"
 DEBUG = ROOT / "debug"
 SAMPLES = ROOT / "samples"
 

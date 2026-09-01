@@ -65,6 +65,30 @@ class Alert:
         )
 
     @classmethod
+    def approaching(cls, status: Status) -> "Alert":
+        """Close to the destination, in time to do something about it."""
+        return cls(
+            headline="Approaching destination",
+            body=f"{status.distance_m:.0f}m to go.",
+            state=status.state,
+            urgent=True,
+            details={"ETA": duration(status.eta_seconds)},
+        )
+
+    @classmethod
+    def stalling(cls, status: Status) -> "Alert":
+        """Progress has faltered, well before it counts as properly stuck."""
+        return cls(
+            headline="Progress has stalled",
+            body=(
+                f"No progress for {duration(status.stalled_seconds)}, "
+                f"{status.distance_m:.0f}m remaining. Not yet counted as stuck."
+            ),
+            state=status.state,
+            urgent=True,
+        )
+
+    @classmethod
     def still_stuck(cls, status: Status) -> "Alert":
         remaining = (
             f"{status.distance_m:.0f}m still to go."

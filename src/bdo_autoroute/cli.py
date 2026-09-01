@@ -5,14 +5,20 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 
 from . import commands
 from .marker import MarkerError
 from .readout import OcrError
-from .settings import Settings, SettingsError
+from .settings import ROOT, Settings, SettingsError
 from .window import CaptureError
 
 log = logging.getLogger("bdo_autoroute")
+
+LOGS = ROOT / "logs"
+LOG_FILE = LOGS / "autoroute.log"
+LOG_BYTES = 2_000_000
+LOG_BACKUPS = 5
 
 COMMANDS = {
     "calibrate": commands.calibrate,
@@ -43,13 +49,36 @@ def parser() -> argparse.ArgumentParser:
     return parsed
 
 
+def start_logging(verbose: bool) -> None:
+    """Console for watching, a rotating file for working out what happened later.
+
+    Intermittent misreads are the hard ones, and they are only diagnosable
+    against a record. The file keeps full dates where the console keeps clock
+    times, and every poll is logged whether or not it produced an alert.
+    """
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter("%(asctime)s  %(levelname)-7s %(message)s", "%H:%M:%S"))
+    root.addHandler(console)
+
+    try:
+        LOGS.mkdir(parents=True, exist_ok=True)
+        to_file = RotatingFileHandler(
+            LOG_FILE, maxBytes=LOG_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8"
+        )
+        to_file.setFormatter(
+            logging.Formatter("%(asctime)s  %(levelname)-7s %(name)s  %(message)s")
+        )
+        root.addHandler(to_file)
+    except OSError as exc:
+        log.warning("Could not open %s for logging (%s); console only.", LOG_FILE, exc)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(asctime)s  %(levelname)-7s %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    start_logging(args.verbose)
     try:
         return COMMANDS[args.command](Settings.load(), args)
     except (SettingsError, CaptureError, MarkerError, OcrError) as exc:

@@ -7,6 +7,9 @@ venv/
 calibration.json
 config.toml
 
+# Local logs, rotated at 2MB x 5
+logs/
+
 # Captured frames and debug crops (auto-pruned after storage.retain_days)
 captures/
 debug/

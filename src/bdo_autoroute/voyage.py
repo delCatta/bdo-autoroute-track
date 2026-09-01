@@ -10,6 +10,12 @@ NEW_ROUTE_JUMP_M = 500.0
 MAX_CLOSING_SPEED_MPS = 40.0
 RATE_WINDOW_SECONDS = 600
 
+# A jump larger than this speed allows is not travel: it is a new route, or a
+# misread. Real routes close at roughly 20 m/s, so 25 leaves headroom while
+# still catching the OCR failure where a leading digit goes missing and 1480
+# reads as 480.
+PLAUSIBLE_SPEED_MPS = 25.0
+
 
 class State(str, Enum):
     STARTING = "STARTING"
@@ -71,6 +77,8 @@ class Status:
     stalled_seconds: float
     event: Event | None
     pending_arrival: bool = False
+    approaching: bool = False
+    stalling: bool = False
 
     @property
     def changed(self) -> bool:
@@ -156,12 +164,16 @@ class Voyage:
         missing_confirm_polls: int,
         near_arrival_m: float,
         arrival_confirm_polls: int = 2,
+        approaching_m: float = 500.0,
+        stalling_after_seconds: float = 60.0,
     ) -> None:
         self._arrival_threshold = arrival_threshold_m
         self._stuck_after = stuck_after_seconds
         self._missing_confirm = max(1, missing_confirm_polls)
         self._near_arrival = near_arrival_m
         self._arrival_confirm = max(1, arrival_confirm_polls)
+        self._approaching_m = approaching_m
+        self._stalling_after = stalling_after_seconds
 
         self._progress = Progress(movement_epsilon_m)
         self._state = State.STARTING
@@ -170,6 +182,12 @@ class Voyage:
         self._arrivals = 0
         self._pending_arrival = False
         self._went_red = False
+        self._announced_approach = False
+        self._announced_stall = False
+        self._approaching = False
+        self._stalling = False
+        self._unconfirmed: float | None = None
+        self._seen_at: float | None = None
 
     @property
     def state(self) -> State:
@@ -191,17 +209,21 @@ class Voyage:
 
     def _seen(self, distance: float, now: float) -> Status:
         previous, self._missing = self._state, 0
+        self._approaching = self._stalling = False
 
-        if self._progress.abandoned_by(distance):
-            self._start_fresh()
-        self._progress.record(distance, now)
-        self._distance = distance
+        if self._beyond_reach(distance, now):
+            return self._await_confirmation(distance, previous, now)
+
+        self._unconfirmed = None
+        self._accept(distance, now)
 
         if distance <= self._arrival_threshold:
             return self._arriving(distance, previous, now)
 
         self._arrivals, self._pending_arrival = 0, False
         stalled = self._progress.stalled_for(now)
+        self._approaching = self._first_approach(distance)
+        self._stalling = self._first_stall(stalled)
         if stalled >= self._stuck_after:
             self._state = State.STUCK
             return self._status(
@@ -212,6 +234,45 @@ class Voyage:
 
         self._state = State.TRAVELLING
         return self._status(previous, f"Under way, {distance:.0f}m remaining.", now)
+
+    def _accept(self, distance: float, now: float) -> None:
+        if self._progress.abandoned_by(distance):
+            self._start_fresh()
+        self._progress.record(distance, now)
+        self._distance = distance
+        self._seen_at = now
+
+    def _beyond_reach(self, distance: float, now: float) -> bool:
+        """Further from the last accepted reading than any route could travel."""
+        if self._distance is None or self._seen_at is None:
+            return False
+        allowed = max(NEW_ROUTE_JUMP_M, PLAUSIBLE_SPEED_MPS * max(0.0, now - self._seen_at))
+        return abs(distance - self._distance) > allowed
+
+    def _await_confirmation(self, distance: float, previous: State, now: float) -> Status:
+        """Hold an impossible jump until a second reading agrees with it.
+
+        A genuine route change is confirmed by the next poll and costs one poll
+        of latency. A misread is not, and never moves the baseline - which is
+        what keeps a flickering 1480/480 from resetting the stall timer forever.
+        """
+        agreed = (
+            self._unconfirmed is not None
+            and abs(distance - self._unconfirmed) <= NEW_ROUTE_JUMP_M
+        )
+        if agreed:
+            self._unconfirmed = None
+            self._start_fresh()
+            self._accept(distance, now)
+            self._state = State.TRAVELLING
+            return self._status(previous, f"New route, {distance:.0f}m remaining.", now)
+
+        self._unconfirmed = distance
+        return self._status(
+            previous,
+            f"Ignoring an implausible jump to {distance:.0f}m; awaiting confirmation.",
+            now,
+        )
 
     def _arriving(self, distance: float, previous: State, now: float) -> Status:
         self._arrivals += 1
@@ -228,6 +289,7 @@ class Voyage:
 
     def _nothing_seen(self, now: float) -> Status:
         previous = self._state
+        self._approaching = self._stalling = False
         self._missing += 1
         if self._missing < self._missing_confirm:
             return self._status(previous, "Nothing readable, waiting.", now)
@@ -263,11 +325,29 @@ class Voyage:
             "disconnected, or the marker may be off screen."
         )
 
+    def _first_approach(self, distance: float) -> bool:
+        """True on the single poll where the destination first comes into range."""
+        if self._announced_approach:
+            return False
+        if distance > self._approaching_m and not self._went_red:
+            return False
+        self._announced_approach = True
+        return True
+
+    def _first_stall(self, stalled: float) -> bool:
+        """True on the single poll where progress first looks doubtful."""
+        if self._announced_stall or stalled < self._stalling_after:
+            return False
+        self._announced_stall = True
+        return True
+
     def _start_fresh(self) -> None:
         self._progress.restart()
         self._went_red = False
         self._arrivals = 0
         self._pending_arrival = False
+        self._announced_approach = False
+        self._announced_stall = False
 
     def _status(self, previous: State, message: str, now: float) -> Status:
         eta = self._progress.eta(self._distance) if self._state is State.TRAVELLING else None
@@ -278,6 +358,8 @@ class Voyage:
             eta_seconds=eta,
             stalled_seconds=self._progress.stalled_for(now),
             pending_arrival=self._pending_arrival,
+            approaching=self._approaching,
+            stalling=self._stalling,
             event=Event(
                 state=self._state,
                 previous=previous,

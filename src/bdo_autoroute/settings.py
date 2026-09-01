@@ -111,10 +111,13 @@ class Settings:
     stuck_realert_minutes: int = 10
     missing_confirm_polls: int = 4
     near_arrival_m: float = 400.0
+    approaching_m: float = 500.0
+    stalling_after_seconds: int = 60
 
     webhook_url: str = ""
     attach_screenshot: bool = True
-    heartbeat_minutes: int = 5
+    heartbeat_minutes: int = 1
+    heartbeat_min_progress_m: float = 150.0
     mention: str = ""
     urgent_states: list[str] = field(
         default_factory=lambda: ["ARRIVED", "STUCK", "SIGNAL_LOST"]
@@ -197,9 +200,16 @@ class Settings:
                 "missing_confirm_polls", fallback.missing_confirm_polls
             ),
             near_arrival_m=detect.get("near_arrival_m", fallback.near_arrival_m),
+            approaching_m=detect.get("approaching_m", fallback.approaching_m),
+            stalling_after_seconds=detect.get(
+                "stalling_after_seconds", fallback.stalling_after_seconds
+            ),
             webhook_url=notify.get("discord_webhook_url", fallback.webhook_url),
             attach_screenshot=notify.get("attach_screenshot", fallback.attach_screenshot),
             heartbeat_minutes=notify.get("heartbeat_minutes", fallback.heartbeat_minutes),
+            heartbeat_min_progress_m=notify.get(
+                "heartbeat_min_progress_m", fallback.heartbeat_min_progress_m
+            ),
             mention=notify.get("mention", fallback.mention),
             urgent_states=notify.get("ping_on", fallback.urgent_states),
             match_threshold=marker.get("match_threshold", fallback.match_threshold),

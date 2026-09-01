@@ -58,6 +58,17 @@ number tells you everything:
 | Readout gone, was close or red | `ARRIVED` | The marker cleared on arrival. |
 | Readout gone, was far out | `SIGNAL_LOST` | Client crashed, disconnected, or the camera turned away. |
 
+Two **early warnings** fire before the confirmed states, so you hear about
+things while you can still act:
+
+| Notice | When | Why it exists |
+|---|---|---|
+| **Approaching destination** | distance first drops under `approaching_m` (500m), or the readout turns red | Time to get back to the keyboard before you arrive |
+| **Progress has stalled** | progress first falters for `stalling_after_seconds` (60s) | Long before the confirmed `STUCK` at 180s |
+
+Each fires **once per route** and resets when a new route is set, so they warn
+rather than nag. Confirmed `STUCK` still nags on its own cooldown.
+
 Three details drive the whole design, all of them learned from the real game
 rather than assumed:
 
@@ -154,6 +165,10 @@ confidence fell from 0.98 to 0.86, right onto the threshold, causing
 intermittent misses. **Re-run calibrate if you change `capture.method`.**
 
 ## Housekeeping
+
+`logs/autoroute.log` records every poll with full timestamps, rotating at 2MB
+across 5 files. Intermittent misreads are the hard ones to chase, and they are
+only diagnosable against a record.
 
 `captures/` and `debug/` are working files, deleted after `storage.retain_days`
 (7) so a monitor left running for weeks will not fill the disk. Pruning happens
@@ -288,11 +303,14 @@ All in `config.toml`, all commented:
 | `capture.poll_interval_seconds` | `30` | Deliberately faster than the heartbeat so a stuck boat is caught early. |
 | `detect.arrival_threshold_m` | `70` | The number doesn't reliably reach zero, so don't set this near 0. |
 | `detect.arrival_confirm_polls` | `2` | Consecutive sub-threshold readings before declaring arrival. |
-| `detect.stuck_after_seconds` | `180` | Raise it if slow ships near land trip false alarms. |
+| `detect.stuck_after_seconds` | `180` | Confirmed, nagging stuck. Raise it if slow ships near land trip false alarms. |
 | `detect.movement_epsilon_m` | `15` | Progress smaller than this is treated as noise. |
 | `marker.match_threshold` | `0.85` | Must sit above the scenery noise floor (~0.72). Calibration checks this. |
 | `marker.left_slack` | `2.0` | Widens the digits box leftward so calibrating on `600` still catches `12345`. |
-| `notify.heartbeat_minutes` | `5` | Your routine screenshot. `0` = only alert on events. |
+| `notify.heartbeat_minutes` | `1` | Routine screenshot, at most this often. `0` = only alert on events. |
+| `notify.heartbeat_min_progress_m` | `150` | ...and only once this much ground has been covered since the last one. |
+| `detect.approaching_m` | `500` | One-off early warning when the destination comes into range. |
+| `detect.stalling_after_seconds` | `60` | One-off early warning when progress falters, before `stuck_after_seconds`. |
 | `detect.stuck_realert_minutes` | `10` | How often a still-stuck boat nags you. |
 | `storage.retain_days` | `7` | Age at which captures/ and debug/ files are deleted. 0 disables. |
 | `storage.sample_every_minutes` | `30` | Throttle for routine `ok` samples; anomalies ignore it. |
