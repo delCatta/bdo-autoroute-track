@@ -13,7 +13,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from .alerts import Alert
+from .desktop import Desktop
 from .discord import Discord
+from .outbox import Outbox
 from .marker import Marker, Sighting
 from .monitor import Monitor, build_marker, build_readout, build_voyage
 from .observation import Observation
@@ -175,8 +177,36 @@ def shot(settings: Settings, _args) -> int:
     return 3
 
 
+def build_outbox(settings: Settings) -> Outbox:
+    """Every channel that can actually be built, with a reason for any that cannot."""
+    channels = []
+    for name in settings.channels:
+        try:
+            channels.append(_channel(name, settings))
+        except Exception as exc:
+            log.warning("Channel %r unavailable, skipping: %s", name, exc)
+
+    if not channels:
+        log.error(
+            "No usable notification channels. Set notify.discord_webhook_url, "
+            'or add "desktop" to notify.channels.'
+        )
+    return Outbox(channels)
+
+
+def _channel(name: str, settings: Settings):
+    if name == "discord":
+        return Discord(settings.webhook_url, settings.mention)
+    if name == "desktop":
+        return Desktop(icon=ROOT / "assets" / "boat.ico")
+    raise ValueError(f"unknown channel {name!r}")
+
+
 def test_notify(settings: Settings, _args) -> int:
-    discord = Discord(settings.webhook_url, settings.mention)
+    outbox = build_outbox(settings)
+    if outbox.empty:
+        return 2
+
     alert = Alert.test_message()
     if settings.attach_screenshot:
         try:
@@ -185,10 +215,11 @@ def test_notify(settings: Settings, _args) -> int:
         except Exception as exc:
             log.warning("Could not grab a screenshot (%s); sending without one.", exc)
 
-    if discord.deliver(alert):
+    log.info("Sending a test alert to: %s", ", ".join(outbox.names))
+    if outbox.deliver(alert):
         log.info("Test alert delivered.")
         return 0
-    log.error("Test alert failed. Check notify.discord_webhook_url in config.toml.")
+    log.error("Test alert failed on every channel.")
     return 2
 
 
@@ -197,12 +228,28 @@ def run(settings: Settings, args) -> int:
         settings,
         Calibration.load(),
         build_readout(settings),
-        Discord(settings.webhook_url, settings.mention),
+        build_outbox(settings),
         build_voyage(settings),
         working_dirs=(CAPTURES, DEBUG),
         samples_dir=SAMPLES,
     )
     return monitor.run(once=args.once)
+
+
+def tray(settings: Settings, _args) -> int:
+    """Run the monitor behind a system tray icon."""
+    from .tray import Tray
+
+    monitor = Monitor(
+        settings,
+        Calibration.load(),
+        build_readout(settings),
+        build_outbox(settings),
+        build_voyage(settings),
+        working_dirs=(CAPTURES, DEBUG),
+        samples_dir=SAMPLES,
+    )
+    return Tray(monitor, icon=ROOT / "assets" / "boat.ico", logs=LOGS).run()
 
 
 def _annotated(frame: Image.Image, sighting: Sighting) -> Image.Image:

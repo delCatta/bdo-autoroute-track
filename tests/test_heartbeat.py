@@ -15,8 +15,8 @@ from bdo_autoroute.settings import Calibration, Settings
 from bdo_autoroute.voyage import State, Status
 
 
-class Outbox:
-    """Stands in for Discord."""
+class Postbag:
+    """Stands in for the Outbox: remembers what it was asked to send."""
 
     def __init__(self) -> None:
         self.sent: list[Alert] = []
@@ -35,13 +35,13 @@ def monitor(tmp_path: Path, **overrides) -> tuple[Monitor, Outbox]:
     fields.update(overrides)
     settings = Settings(**fields)
     calibration = Calibration(Offset(-86, 0, 83, 14), 3440, 1440, "icon_template.png")
-    outbox = Outbox()
+    outbox = Postbag()
     return (
         Monitor(
             settings,
             calibration,
             readout=None,
-            discord=outbox,
+            outbox=outbox,
             voyage=None,
             samples_dir=tmp_path,
         ),

@@ -116,6 +116,7 @@ class Settings:
     stalling_after_seconds: int = 60
 
     webhook_url: str = ""
+    channels: list[str] = field(default_factory=lambda: ["discord", "desktop"])
     attach_screenshot: bool = True
     heartbeat_minutes: int = 1
     heartbeat_min_progress_m: float = 150.0
@@ -216,6 +217,7 @@ class Settings:
                 "stalling_after_seconds", fallback.stalling_after_seconds
             ),
             webhook_url=notify.get("discord_webhook_url", fallback.webhook_url),
+            channels=notify.get("channels", fallback.channels),
             attach_screenshot=notify.get("attach_screenshot", fallback.attach_screenshot),
             heartbeat_minutes=notify.get("heartbeat_minutes", fallback.heartbeat_minutes),
             heartbeat_min_progress_m=notify.get(
@@ -255,6 +257,11 @@ class Settings:
             raise SettingsError("marker.match_threshold must be between 0 and 1.")
         if self.retain_days < 0:
             raise SettingsError("storage.retain_days cannot be negative.")
+        unknown = [c for c in self.channels if c not in ("discord", "desktop")]
+        if unknown:
+            raise SettingsError(
+                f"Unknown notify.channels {unknown}; use 'discord' and/or 'desktop'."
+            )
         if self.log_max_mb < 1:
             raise SettingsError("logging.max_mb must be at least 1.")
         if self.log_keep_files < 0:

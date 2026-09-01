@@ -19,7 +19,7 @@ from PIL import Image
 
 from .alerts import Alert
 from .archive import Archive, expire
-from .discord import Discord
+from .outbox import Outbox
 from .marker import Marker, MarkerError
 from .observation import Observation
 from .readout import Readout
@@ -58,7 +58,7 @@ class Monitor:
         settings: Settings,
         calibration: Calibration,
         readout: Readout,
-        discord: Discord,
+        outbox: Outbox,
         voyage: Voyage,
         *,
         working_dirs: tuple[Path, ...] = (),
@@ -67,7 +67,7 @@ class Monitor:
         self._settings = settings
         self._calibration = calibration
         self._readout = readout
-        self._discord = discord
+        self._outbox = outbox
         self._voyage = voyage
         self._working_dirs = working_dirs
         self._debug_dir = working_dirs[-1] if working_dirs else None
@@ -76,6 +76,7 @@ class Monitor:
         self._marker_size: tuple[int, int] | None = None
         self._stopping = False
         self._warned_blank = False
+        self._observers: list = []
         self._heartbeat = Timer(settings.heartbeat_seconds)
         self._last_heartbeat_distance: float | None = None
         self._greeted = False
@@ -87,12 +88,16 @@ class Monitor:
             enabled=settings.samples_enabled,
         )
 
-    def run(self, *, once: bool = False) -> int:
-        signal.signal(signal.SIGINT, self.stop)
+    def run(self, *, once: bool = False, handle_signals: bool = True) -> int:
+        if handle_signals:
+            # Only the main thread may install handlers; the tray runs this in
+            # a worker and stops it through halt() instead.
+            signal.signal(signal.SIGINT, self._on_interrupt)
         self._tidy_up()
         log.info(
-            "Watching every %ds. Heartbeat %s. Ctrl+C to stop.",
+            "Watching every %ds via %s. Heartbeat %s. Ctrl+C to stop.",
             self._settings.poll_interval_seconds,
+            ", ".join(self._outbox.names) or "nothing",
             f"every {self._settings.heartbeat_minutes} min"
             if self._settings.heartbeat_minutes
             else "off",
@@ -108,9 +113,17 @@ class Monitor:
         log.info("Stopped.")
         return 0
 
-    def stop(self, _signum: int, _frame: FrameType | None) -> None:
-        log.info("Stop requested; finishing this poll.")
+    def watch(self, observer) -> None:
+        """Call `observer(status)` after every poll. Used by the tray."""
+        self._observers.append(observer)
+
+    def halt(self) -> None:
+        """Finish the current poll and stop."""
         self._stopping = True
+
+    def _on_interrupt(self, _signum: int, _frame: FrameType | None) -> None:
+        log.info("Stop requested; finishing this poll.")
+        self.halt()
 
     def _tick(self, capture) -> None:
         try:
@@ -136,6 +149,7 @@ class Monitor:
         )
         self._report(status, observation)
         self._announce(status, observation.frame, now)
+        self._tell_observers(status)
 
     def _look(self, frame: Image.Image, size: tuple[int, int]) -> Observation:
         self._warn_once_if_blank(frame)
@@ -203,8 +217,16 @@ class Monitor:
         self._last_heartbeat_distance = status.distance_m
         return True
 
+    def _tell_observers(self, status: Status) -> None:
+        for observer in self._observers:
+            try:
+                observer(status)
+            except Exception as exc:
+                log.debug("Observer failed: %s", exc)
+
     def _nothing_to_see(self, reason: str, *, minimised: bool = False) -> None:
         status = self._voyage.update(None, time.monotonic())
+        self._tell_observers(status)
         if not status.changed:
             return
         label = "Game minimised" if minimised else "Error"
@@ -220,7 +242,7 @@ class Monitor:
     def _send(self, alert: Alert, frame: Image.Image | None) -> None:
         if self._settings.attach_screenshot:
             alert = alert.showing(frame)
-        if self._discord.deliver(alert):
+        if self._outbox.deliver(alert):
             log.info("Alert sent: %s", alert.headline)
 
     def _marker_for(self, size: tuple[int, int]) -> Marker:

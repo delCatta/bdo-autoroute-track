@@ -42,6 +42,7 @@ class Discord:
 
     webhook_url: str
     mention: str = ""
+    name: str = "discord"
 
     def __post_init__(self) -> None:
         if not self.webhook_url:
@@ -85,9 +86,10 @@ class Discord:
 
     @staticmethod
     def _attachment(alert: Alert) -> dict[str, tuple[str, bytes, str]] | None:
-        if alert.screenshot is None:
+        shot = alert.thumbnail(MAX_SCREENSHOT_WIDTH)
+        if shot is None:
             return None
-        return {"files[0]": ("frame.jpg", encoded(alert.screenshot), "image/jpeg")}
+        return {"files[0]": ("frame.jpg", encoded(shot), "image/jpeg")}
 
     def _post(self, payload: dict[str, object], files: dict | None) -> requests.Response:
         if files:

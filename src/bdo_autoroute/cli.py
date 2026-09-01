@@ -21,6 +21,7 @@ LOG_FILE = LOGS / "autoroute.log"
 COMMANDS = {
     "calibrate": commands.calibrate,
     "run": commands.run,
+    "tray": commands.tray,
     "shot": commands.shot,
     "test-notify": commands.test_notify,
     "windows": commands.windows,
@@ -62,6 +63,9 @@ def parser() -> argparse.ArgumentParser:
     subcommands.add_parser("calibrate", parents=[common], help="box the digits and the icon")
     running = subcommands.add_parser("run", parents=[common], help="start watching")
     running.add_argument("--once", action="store_true", help="poll a single time and exit")
+    subcommands.add_parser(
+        "tray", parents=[common], help="run in the background with a tray icon"
+    )
     subcommands.add_parser("shot", parents=[common], help="one look, for troubleshooting")
     subcommands.add_parser("test-notify", parents=[common], help="send a test alert")
     subcommands.add_parser("windows", parents=[common], help="list windows and which match")

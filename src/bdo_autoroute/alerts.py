@@ -41,6 +41,16 @@ class Alert:
     def stamped_details(self) -> dict[str, str]:
         return {**self.details, "Time": datetime.now().strftime("%H:%M:%S")}
 
+    def thumbnail(self, max_width: int) -> Image.Image | None:
+        """The screenshot, shrunk to fit. Every channel wants it smaller."""
+        if self.screenshot is None:
+            return None
+        if self.screenshot.width <= max_width:
+            return self.screenshot
+        ratio = max_width / self.screenshot.width
+        height = max(1, round(self.screenshot.height * ratio))
+        return self.screenshot.resize((max_width, height), Image.LANCZOS)
+
     def showing(self, screenshot: Image.Image | None) -> "Alert":
         if screenshot is None:
             return self

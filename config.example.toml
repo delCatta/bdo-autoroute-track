@@ -69,6 +69,11 @@ stalling_after_seconds = 60
 arrival_confirm_polls = 2
 
 [notify]
+# Where alerts go. "discord" needs the webhook below; "desktop" raises a Windows
+# toast and needs nothing. A channel that cannot be built is skipped with a
+# warning rather than stopping the monitor.
+channels = ["discord", "desktop"]
+
 # Create one under Discord: Channel > Edit Channel > Integrations > Webhooks.
 discord_webhook_url = ""
 
