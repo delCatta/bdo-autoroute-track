@@ -117,9 +117,11 @@ which is a different category from this.
 > program, and account actions are theirs to take. If that risk is not acceptable
 > to you, do not run it.
 
-Not affiliated with, endorsed by, or connected to Pearl Abyss. **No game files or
-artwork ship here** — `icon_template.png` is generated on your own machine from
-your own screen, and is gitignored.
+Not affiliated with, endorsed by, or connected to Pearl Abyss. "Black Desert
+Online" and its assets belong to them. **No game files are redistributed** — the
+docs include one gameplay screenshot to show what the marker looks like, and
+`icon_template.png` is generated on your own machine from your own screen and is
+gitignored.
 
 ## Known limitations
 

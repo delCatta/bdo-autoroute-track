@@ -126,11 +126,10 @@ other — so **re-run calibrate if you change it**.
 **Everything depends on the marker being on screen.** It is small — the distance
 digits and a route icon beside them, drawn over the world at the destination:
 
-```
-                    Balenos
-                  Iliya Island
-                    2130  [icon]
-```
+<img src="../assets/marker-example.png" alt="The route marker in game: 2130 metres and the route icon, over a ship deck" width="420">
+
+That is 2130 metres to go, and a good camera angle: pointed down, marker clear
+of the ship and the UI. This is the whole input — the number and the icon.
 
 If it is hidden, the tool reports `marker not found`, and after
 `detect.missing_confirm_polls` polls it says it has lost the route. It will not

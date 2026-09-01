@@ -87,6 +87,8 @@ in a genuinely different position, and should not carry this name.
 
 ## Not affiliated with Pearl Abyss
 
-"Black Desert Online" and its assets belong to them. No game files or artwork
-ship in this repository: `icon_template.png` is generated on your own machine
-from your own screen, and is gitignored. Please keep it that way.
+"Black Desert Online" and its assets belong to them. **No game files are
+redistributed here.** The docs include one gameplay screenshot showing what the
+marker looks like, because users have to be able to find it; beyond that, please
+do not add game assets. `icon_template.png` is generated on each user's own
+machine from their own screen and is gitignored — keep it that way.
