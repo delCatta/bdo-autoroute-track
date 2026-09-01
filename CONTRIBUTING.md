@@ -12,7 +12,7 @@ You do not need to write any code for the first three.
 ### 🖥️ Tell us your resolution
 
 Template matching is **known broken** when the resolution changes after
-calibration: at 0.537 scale the marker scored 0.00. Recalibrating at your own
+calibration, and at 0.537 scale the marker scored 0.00. Recalibrating at your own
 resolution should work, but that has only been proven at 3440×1440.
 
 Run `.\shot.cmd` after calibrating and open an issue with the confidence number
@@ -20,7 +20,7 @@ and your resolution. Even "works fine at 1920×1080" is useful.
 
 ### 🔤 Help fix the dropped leading digit
 
-OCR sometimes loses the first digit: `740` reads as `/40`, `1480` as `480`. The
+OCR sometimes loses the first digit, so `740` reads as `/40` and `1480` as `480`. The
 state machine refuses to act on it, so it cannot cause a false arrival, but the
 readings are still occasionally wrong.
 
@@ -42,7 +42,7 @@ client language is enough to start.
 
 ### ⚓ Anything that behaves oddly
 
-Especially: an alert that says something untrue, a state that seems stuck in the
+Especially an alert that says something untrue, a state that seems stuck in the
 wrong place, or a notification that never arrives. Include
 `logs/autoroute.log` if you have it.
 
@@ -66,7 +66,7 @@ wheel for. `setup.cmd` checks this for you.
   the marker, OCR, or the state machine. It records a dozen assumptions that
   look obviously correct and are provably wrong. Every one cost a real defect.
 - **Match the style in [.claude/CONVENTIONS.md](.claude/CONVENTIONS.md).**
-  Briefly: rich objects and thin orchestration, nouns rather than `-er` names,
+  Briefly, rich objects and thin orchestration, nouns rather than `-er` names,
   declarative methods, and comments only where the code cannot explain *why*.
 - **Test names start with the method**, present tense:
   `test_sighting_finds_the_icon_wherever_it_sits`.
@@ -79,7 +79,7 @@ writing something that gets turned down.
 
 ## One thing that will be turned down
 
-**Anything that sends input to the game.** This is read-only by design: screen
+**Anything that sends input to the game.** This is read-only by design. Screen
 capture only, never memory reads, never injection, never synthesised keystrokes
 or clicks. That constraint is what separates it from the macro and botting
 category, and it is not negotiable. A fork that adds automation puts its users

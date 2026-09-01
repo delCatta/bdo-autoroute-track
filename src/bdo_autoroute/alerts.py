@@ -1,7 +1,7 @@
 """What the traveller gets told, and how it is worded.
 
 An Alert knows its own headline, body and urgency. Delivery is somebody else's
-job: Discord takes an Alert and sends it, and knows nothing about routes.
+job, so Discord takes an Alert and sends it and knows nothing about routes.
 """
 
 from __future__ import annotations
@@ -114,7 +114,7 @@ class Alert:
 
     @classmethod
     def watching(cls, status: Status) -> "Alert":
-        """The first word after starting up: watching, and the webhook works.
+        """The first word after starting up. Watching, and the webhook works.
 
         Deliberately not "still under way". This fires before any progress has
         been observed, and once claimed motion on a route that had not moved.

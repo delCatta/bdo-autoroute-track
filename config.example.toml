@@ -2,7 +2,7 @@
 # Copy this file to config.toml and edit. config.toml is gitignored.
 
 [window]
-# The game is identified by its process first. Titles are treacherous: a Discord
+# The game is identified by its process first. Titles are treacherous. A Discord
 # server called "Black Desert - Sailing", or a browser tab about the game, match
 # just as well - and Windows enumerates windows front-to-back, so alt-tabbing to
 # read an alert was enough to start screenshotting Discord instead of the game.
@@ -18,7 +18,7 @@ title_matches = ["Black Desert"]
 # "window" captures the game window itself through Windows Graphics Capture
 # (what OBS calls Window Capture). Overlapping windows never appear in the
 # frame, so you can use the PC while the monitor runs.
-# "screen" grabs the desktop rectangle the window sits on: simpler, but
+# "screen" grabs the desktop rectangle the window sits on, which is simpler but
 # anything covering the game lands in the frame and corrupts the reading.
 # If window capture is unavailable it falls back to screen automatically.
 method = "window"
@@ -74,7 +74,7 @@ arrival_confirm_polls = 2
 # warning rather than stopping the monitor.
 channels = ["discord", "desktop"]
 
-# Create one under Discord: Channel > Edit Channel > Integrations > Webhooks.
+# Create one under Discord, via Channel > Edit Channel > Integrations > Webhooks.
 #
 # Anyone holding this URL can post to that channel, so it is worth protecting.
 # Saving from the settings window encrypts it against your Windows account, and
@@ -112,7 +112,7 @@ ping_on = ["ARRIVED", "STUCK", "SIGNAL_LOST"]
 # whole frame and the digits are read from a box beside wherever it was found.
 
 # Minimum template-match confidence (0-1) to accept a marker sighting.
-# Measured on a real 3440x1440 frame: the marker scores 1.00, while ordinary
+# Measured on a real 3440x1440 frame, the marker scores 1.00, while ordinary
 # scenery tops out around 0.72. Anything at or below ~0.75 will mistake deck
 # texture for the marker and report a made-up distance. `calibrate` measures
 # this separation for your setup and tells you if this value is too low.
@@ -133,9 +133,9 @@ upscale = 4
 # Digits are light on a dark background. Pixels brighter than this (0-255)
 # are kept as text, everything else is dropped.
 #
-# Measured on live crops: 150 clipped the thin strokes of leading digits, so
-# OCR read "740" as "/40" and the 7 was dropped - a 700m error. Comparing the
-# same 10 crops: threshold 120 gave 0 anomalies and 0 misses, 150 gave 3 and 2.
+# Measured on live crops, 150 clipped the thin strokes of leading digits, so
+# OCR read "740" as "/40" and the 7 was dropped, a 700m error. Comparing the
+# same 10 crops, threshold 120 gave 0 anomalies and 0 misses, 150 gave 3 and 2.
 brightness_threshold = 120
 
 # Sanity bounds. Readings outside this range are discarded as misreads.
@@ -149,7 +149,8 @@ save_crops = false
 
 [logging]
 # Write every poll to logs/autoroute.log as well as the console. Off by
-# default. Turn it on when chasing an intermittent misread: after the fact the
+# default. Turn it on when chasing an intermittent misread, because after the
+# fact the
 # log is the only record of what was actually read. `--log` turns it on for a
 # single run without editing this file.
 to_file = false

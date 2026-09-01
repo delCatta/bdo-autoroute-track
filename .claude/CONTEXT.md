@@ -9,7 +9,7 @@ A read-only screen monitor for Black Desert Online. It watches the auto-route
 marker's remaining-distance number and pushes an alert (Discord, a Windows
 toast, or both) when you arrive, stall, get stuck, or lose the route.
 
-Works for any auto-route: barter voyages are what it was built for, but the
+Works for any auto-route. Barter voyages are what it was built for, but the
 marker is the same one land auto-pathing uses.
 
 ## 2. Prior art
@@ -23,7 +23,7 @@ Nobody had built this. The pieces existed separately:
 | [BDO Barter Inventory Bot](https://github.com/pmazumder3927/BDO-Barter-Inventory-Bot) | One-shot inventory screenshot, no monitoring loop |
 | [BDO Boss Alerts](https://github.com/Hermitter/BDO-Boss-Alerts), [BDO-Alerts](https://github.com/LoadingMagic/BDO-Alerts) | Global server events, never your character |
 
-Ships snagging on auto-path is documented: [BDFoundry, April 2026](https://www.blackdesertfoundry.com/global-lab-updates-10th-april-2026/)
+Ships snagging on auto-path is documented. [BDFoundry, April 2026](https://www.blackdesertfoundry.com/global-lab-updates-10th-april-2026/)
 records Pearl Abyss relocating objects around Star of Margoria because of it.
 
 ## 3. How the game actually behaves
@@ -45,7 +45,7 @@ watching the client, not from documentation.
    turning red counts as arrival rather than a lost signal.
 
 4. **Layout is `[digits] [gap] [icon]`**, under the destination name. The gap is
-   **not constant**: it shrinks as the number grows. See bug #2.
+   **not constant**, and it shrinks as the number grows. See bug #2.
 
 ## 4. Architecture
 
@@ -83,33 +83,33 @@ Jitter and drift never masquerade as movement.
 
 Do not reintroduce these. Each has a regression test.
 
-**#1: `match_threshold` sat at the noise floor.** On a real 3440×1440 frame the
+**#1. `match_threshold` sat at the noise floor.** On a real 3440×1440 frame the
 marker scores **1.000** and ordinary scenery tops out at **0.716**. The original
 0.70 default would have matched deck texture and reported fabricated distances.
 Now 0.85, and `calibrate` measures the separation for your own setup.
 → `tests/test_marker.py::TestConfidenceIn`
 
-**#2: Digits clipped, a 10× error.** A live **14000 read as 1400**. The box
+**#2. Digits clipped, a 10× error.** A live **14000 read as 1400**. The box
 preserved the 17px gap measured on "600", but five digits sit ~8px from the
 icon. The box now hugs the icon.
 → `tests/test_marker.py::TestOffsetBetween`
 
-**#3: OCR misread `1169` as `9`.** Raw text was `"11'69 9"`. The apostrophe
+**#3. OCR misread `1169` as `9`.** Raw text was `"11'69 9"`. The apostrophe
 split it, and a right-most rule picked the stray `9`. Apostrophes are now
 separators, the parser takes the run with the **most digits**, and arrival needs
 **two consecutive** sub-threshold readings.
 → `tests/test_readout.py::TestDistanceIn`
 
-**#4: Template mismatch across capture backends.** Screen and Graphics Capture
+**#4. Template mismatch across capture backends.** Screen and Graphics Capture
 render colours slightly differently; a template cut under one scored 0.86 under
 the other. **Re-run calibrate after changing `capture.method`.**
 
-**#5: A route change poisoned the ETA.** 10710m → 657m averaged across the jump
+**#5. A route change poisoned the ETA.** 10710m → 657m averaged across the jump
 and reported `eta=0s`. Rate history resets on any change faster than
 `MAX_CLOSING_SPEED_MPS`.
 → `tests/test_voyage.py::TestEta`
 
-**#6: Black Desert does not minimise like a normal window.**
+**#6. Black Desert does not minimise like a normal window.**
 
 ```
 Ordinary window   IsIconic=True   client 0x0        rect (-32000,-32000)
@@ -122,30 +122,30 @@ from `list_windows()`. Because the rect stays valid, capture is attempted rather
 than refused. **Untested:** whether Graphics Capture can read a hidden window.
 → `tests/test_window.py`
 
-**#7: OCR dropped leading digits at threshold 150.** `740` read as `/40`. Over
-the same 10 live crops: th120 gave 0 anomalies, th150 gave 3. Default is 120.
+**#7. OCR dropped leading digits at threshold 150.** `740` read as `/40`. Over
+the same 10 live crops, th120 gave 0 anomalies and th150 gave 3. Default is 120.
 
-**#8: A flicker reset the stall timer.** A dropped leading digit alternated
+**#8. A flicker reset the stall timer.** A dropped leading digit alternated
 `1480`/`480`; each flip looked like a kilometre of progress, so `STUCK` could
 never fire. A change no route could travel is now **held** until a second
 reading agrees.
 → `tests/test_flicker.py`
 
-**#9: The title matched Discord and a browser tab.** Three windows answered to
-"Black Desert": a Discord server named *Black Desert - Sailing*, a Chrome tab
+**#9. The title matched Discord and a browser tab.** Three windows answered to
+"Black Desert", a Discord server named *Black Desert - Sailing*, a Chrome tab
 showing this repo, and the game. EnumWindows returns z-order, so **alt-tabbing
 to read an alert switched capture to Discord**. The alert blinded the tool. The
 game is now found by process (`BlackDesert64.exe`).
 → `tests/test_window_choice.py`
 
-**#10: A refused reading was invisible.** A held poll reports the last accepted
+**#10. A refused reading was invisible.** A held poll reports the last accepted
 distance, so its log line is identical to an ordinary one. Reading a live run
 back from those lines produced a confident but wrong conclusion that the jump
 guard had failed, when it had worked twice. The poll line now says
 `[HELD 3580m: too far to be real, awaiting confirmation]`.
 → `tests/test_held_readings.py`
 
-**#11: A stale reading looked like a fresh one.** A poll that read nothing
+**#11. A stale reading looked like a fresh one.** A poll that read nothing
 still reports the last known distance, so the log said
 `TRAVELLING distance=560m eta=1m 15s` three polls running while the samples
 archive recorded `no_marker` for every one. The only clue was the identical
@@ -154,10 +154,10 @@ now marks it and the line says `(last known)` plus the raw OCR text. Same class
 as #10 but on the far more common path.
 → `tests/test_held_readings.py::TestFresh`
 
-**#12: `PrintWindow` returns black.** For the BDO client, as for most DirectX
+**#12. `PrintWindow` returns black.** For the BDO client, as for most DirectX
 games, every flag including `PW_RENDERFULLCONTENT`. Do not try it again.
 
-**#13: Python 3.13 is not supported.** `rapidocr-onnxruntime` publishes no
+**#13. Python 3.13 is not supported.** `rapidocr-onnxruntime` publishes no
 wheel for it. CI caught this on its first run. `setup.cmd` checks before pip
 does.
 
@@ -175,7 +175,7 @@ does.
 
 **Not verified**
 
-- resolutions other than 3440×1440. **Known broken**: at 0.537 scale the marker
+- resolutions other than 3440×1440. **Known broken**, and at 0.537 scale the marker
   scored 0.00. The tool now says so and tells you to recalibrate.
 - the dropped leading digit is **not fixed at the OCR level**. The state machine
   refuses to act on it, but readings are occasionally still wrong.
@@ -203,11 +203,11 @@ not a default.
 - Log voyages to SQLite to find which routes actually snag
 - A PyInstaller `.exe` so Python is not required. Dependencies weigh 308MB
   (`cv2` alone is 113MB), so expect ~200MB
-- Multiple game clients: `Window.matching` takes the first match
+- Multiple game clients, because `Window.matching` takes the first match
 
 ## 9. The constraint
 
-**Strictly read-only with respect to the game**: screen capture only, never
+**Strictly read-only with respect to the game.** Screen capture only, never
 memory reads, never injection, never synthesised input. That is what separates
 this from the macro/botting category Pearl Abyss enforces against. Do not add
 input automation.

@@ -24,7 +24,7 @@ Notable changes. Dates are when the work landed, not when it was released.
 - **The tray icon carries the state** in its colour, from the same palette the
   Discord embeds use, and greys out when muted. The menu shows state, distance,
   pace or stall, and where alerts are going.
-- Editing `config.toml` keeps every comment: values are replaced line by line
+- Editing `config.toml` keeps every comment, because values are replaced line by line
   rather than round-tripped through a TOML writer.
 
 ### Changed
@@ -48,15 +48,15 @@ First release. Every state has now been observed against the live game.
 - **Failure is noticed.** Three consecutive delivery failures on a channel are
   reported loudly. A monitor that has quietly stopped notifying looks exactly
   like one with nothing to report.
-- **Tray app** (`tray.cmd`): runs in the background with the current state in
+- **Tray app** (`tray.cmd`) runs in the background with the current state in
   the tooltip, and menu entries to mute notifications, pause watching, open the
   logs folder, and quit.
-- **Early warnings** before the confirmed states: *Approaching destination* at
+- **Early warnings** before the confirmed states, so *Approaching destination* at
   500m or when the readout turns red, and *Progress has stalled* at 60s, well
   before the confirmed `STUCK` at 180s. Each fires once per route.
 - **Heartbeat** every minute, but only after 150m of real progress, so a short
   cadence cannot bury the alerts that matter.
-- **`notify.screenshot`**: `full`, `marker` or `none`. A full game window
+- **`notify.screenshot`** takes `full`, `marker` or `none`. A full game window
   carries whispers, guild chat, your character name and the marketplace; the
   `marker` crop carries the distance readout and a little context.
 - **Optional file logging** (`logging.to_file`, or `--log` for one run),
@@ -80,12 +80,12 @@ a regression test. [.claude/CONTEXT.md](.claude/CONTEXT.md) has the full account
 - The number **does not reliably reach zero**, so arrival triggers at ≤70m.
 - The gap between the digits and the icon **shrinks as the number grows**.
   Preserving the calibrated gap clipped `14000` into `1400`.
-- OCR **drops leading digits** at too high a brightness threshold: `740` read
+- OCR **drops leading digits** at too high a brightness threshold, so `740` read
   as `/40`. Measured across the same crops, 120 beat 150 by 3 anomalies to 0.
 - A dropped leading digit made readings **flicker** between `1480` and `480`,
   and each flip reset the stall timer so `STUCK` could never fire. A change no
   route could travel is now held until a second reading agrees with it.
-- **Three windows answered to the title "Black Desert"** at once: a Discord
+- **Three windows answered to the title "Black Desert"** at once, a Discord
   server, a browser tab, and the game. Windows enumerates front-to-back, so
   alt-tabbing to read an alert switched capture to Discord. The game is now
   identified by process.
@@ -94,7 +94,7 @@ a regression test. [.claude/CONTEXT.md](.claude/CONTEXT.md) has the full account
 
 ### Known limitations
 
-- **Resolution changes break template matching.** Measured: at 0.537 scale the
+- **Resolution changes break template matching.** Measured at 0.537 scale, the
   marker scored 0.00. The tool now says so and tells you to recalibrate, rather
   than reporting "marker not found" forever.
 - **The dropped leading digit is not fixed at the OCR level.** The state machine

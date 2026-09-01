@@ -15,7 +15,7 @@
 
 ---
 
-I work remote from home, and I kept losing profit to the same two things: a
+I work remote from home, and I kept losing profit to the same two things, a
 barter boat snagged on terrain going nowhere for twenty minutes, or one that
 arrived while I was in a meeting and just sat there.
 
@@ -29,7 +29,7 @@ happens. I hope it helps you too.
 09:11:12  STUCK        distance=1480m   eta=-        stalled=3m 0s   ->  phone buzzes
 ```
 
-- **Tells you the moment it matters**: arrived, stuck on terrain, or the route
+- **Tells you the moment it matters.** Arrived, stuck on terrain, or the route
   lost to a crash. Plus early warnings at 500m out and 60s of no progress, while
   you can still do something about it.
 - **Discord, Windows toast, or both.** Leave the webhook blank and desktop
@@ -40,9 +40,9 @@ happens. I hope it helps you too.
 - **Notices its own failures.** Three delivery failures in a row say so loudly.
   A monitor that has quietly stopped notifying looks exactly like one with
   nothing to report.
-- **Read-only.** Screen capture only: never memory reads, never injection,
+- **Read-only.** Screen capture only, never memory reads, never injection,
   never a synthesised keystroke.
-- **Any auto-route**, not just boats: it is the same marker land auto-pathing
+- **Any auto-route**, not just boats, because it is the same marker land auto-pathing
   uses.
 
 ## Install
@@ -85,7 +85,7 @@ this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,
 
 ## Before you point it at a shared server
 
-A **`full`** screenshot is the whole game window: whispers, guild chat, your
+A **`full`** screenshot is the whole game window, so whispers, guild chat, your
 character name, the marketplace. Perfect for your own private channel, a leak in
 a guild one.
 
@@ -99,7 +99,7 @@ your Windows account with DPAPI, so a `config.toml` that gets zipped or synced
 carries nothing usable. It does not protect against something already running as
 you.
 
-Nothing else leaves the machine: no telemetry, no analytics, and the sample
+Nothing else leaves the machine. No telemetry, no analytics, and the sample
 archive stays local.
 
 ## Scope and safety
@@ -137,17 +137,18 @@ gitignored.
 three worst bugs in this project were found by someone looking at real output and
 saying "that seems off", never by the test suite.
 
-Most useful right now: **your resolution** (template matching is only proven at
-3440×1440), **logs of a dropped leading digit**, and **non-English clients**.
+The most useful things right now are **your resolution** (template matching is
+only proven at 3440×1440), **logs of a dropped leading digit**, and
+**non-English clients**.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for what to send and how to run the tests.
 
 ## Docs
 
-- **[How it works](docs/how-it-works.md)**: the pipeline, the three things about
+- **[How it works](docs/how-it-works.md)** covers the pipeline, the three things about
   the game that shaped it, every OCR misread and its fix, calibration, tuning
 - **[Changelog](CHANGELOG.md)**
-- **[Engineering context](.claude/CONTEXT.md)**: read before changing capture,
+- **[Engineering context](.claude/CONTEXT.md)**, read before changing capture,
   the marker, OCR, or the state machine
 - **[Conventions](.claude/CONVENTIONS.md)**
 

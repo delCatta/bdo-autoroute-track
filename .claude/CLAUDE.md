@@ -1,6 +1,6 @@
-# BDO Autoroute Track: index
+# BDO Autoroute Track
 
-Start here. This file is a map, not a document: each entry says what the file is
+Start here. This file is a map, not a document. Each entry says what the file is
 for and when to read it.
 
 ## Read before changing code
@@ -24,7 +24,7 @@ obviously correct and are provably wrong. Each one cost a real defect.
 ## handoffs/
 
 `handoffs/<TIMESTAMP>.md` holds notes left mid-session so the next one can pick
-up without re-deriving anything: what was in flight, what was decided, what is
+up without re-deriving anything. What was in flight, what was decided, what is
 still open. **Gitignored**, because they are working notes about a moment, not
 documentation of the project.
 

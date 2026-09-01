@@ -85,13 +85,13 @@ Two structural defences came out of that last one:
 Stall is measured against the *best distance ever reached*, not the previous
 reading, so jitter and drift cannot masquerade as movement.
 
-## Capture: the window, not the screen
+## Capture the window, not the screen
 
 Frames come from the game window itself via **Windows Graphics Capture**, what
 OBS calls Window Capture. Anything stacked on top of the game never appears in
 the frame, so you can use the PC while it runs.
 
-Measured live with windows covering the game: **50.9% of the frame differed**
+Measured live with windows covering the game, **50.9% of the frame differed**
 between the two backends. Window capture read the marker at 0.948 confidence;
 screen capture could not find it at all.
 
@@ -99,7 +99,7 @@ screen capture could not find it at all.
 Desert client, as it does for most DirectX games. Verified, not assumed.
 
 **Which window?** The game is found by its **process**, not its title. Three
-windows can answer to "Black Desert" at once: a Discord server called
+windows can answer to "Black Desert" at once, a Discord server called
 *Black Desert - Sailing*, a browser tab about the game, and the game itself.
 Windows enumerates them front-to-back, and taking the first title match meant
 that alt-tabbing to read an alert started screenshotting Discord.
@@ -123,13 +123,13 @@ the other, so **re-run calibrate if you change it**.
 
 ## Keeping the marker visible
 
-**Everything depends on the marker being on screen.** It is small: the distance
+**Everything depends on the marker being on screen.** It is small, being the distance
 digits and a route icon beside them, drawn over the world at the destination:
 
-<img src="../assets/marker-example.png" alt="The route marker in game: 2130 metres and the route icon, over a ship deck" width="420">
+<img src="../assets/marker-example.png" alt="The route marker in game, 2130 metres and the route icon, over a ship deck" width="420">
 
-That is 2130 metres to go, and a good camera angle: pointed down, marker clear
-of the ship and the UI. This is the whole input: the number and the icon.
+That is 2130 metres to go, and a good camera angle, pointed down and marker clear
+of the ship and the UI. This is the whole input, the number and the icon.
 
 If it is hidden, the tool reports `marker not found`, and after
 `detect.missing_confirm_polls` polls it says it has lost the route. It will not
@@ -160,12 +160,12 @@ the game's own UI.
 Start an auto-route so the marker is on screen, then `.\calibrate.cmd`. You will
 be asked for two boxes:
 
-1. **The distance digits**: just the number. Not the icon.
-2. **The icon beside them**: box it tightly; this becomes the template used to
+1. **The distance digits**, just the number. Not the icon.
+2. **The icon beside them**, boxed tightly. This becomes the template used to
    find the marker as it moves.
 
 Calibration then re-finds the marker, reads it back, and **measures the match
-threshold for you**: it blanks the marker, re-matches to find the scenery noise
+threshold for you**. It blanks the marker, re-matches to find the scenery noise
 floor, and warns if `marker.match_threshold` sits too close to it. On a real
 3440×1440 frame the marker scores 1.00 and scenery tops out near 0.72, which is
 why the default is 0.85. Set it too low and deck texture gets mistaken for the
@@ -174,9 +174,9 @@ marker, and a fabricated distance is reported.
 If the reading fails, open `debug/stencil.png`, the exact black-on-white image
 the OCR engine receives:
 
-- digits faint or broken up: **lower** `ocr.brightness_threshold`
-- background bleeding in as black smears: **raise** it
-- digits tiny: raise `ocr.upscale`
+- digits faint or broken up, so **lower** `ocr.brightness_threshold`
+- background bleeding in as black smears, so **raise** it
+- digits tiny, so raise `ocr.upscale`
 
 Calibration is stored as an icon template plus an offset, never screen
 coordinates, so it survives the camera moving and the window being dragged.
@@ -215,7 +215,7 @@ misreads are the hard ones, and they are only diagnosable against a record.
 
 `captures/` and `debug/` are working files, cleared after `storage.retain_days`.
 
-`samples/` is different: a small, permanent, labelled archive kept for training
+`samples/` is different, a small, permanent, labelled archive kept for training
 later, never pruned. Sampling is **biased towards failures**, because a thousand
 clean reads of "600" teach a model nothing while one misread teaches it plenty.
 

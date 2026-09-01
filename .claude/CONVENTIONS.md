@@ -34,7 +34,7 @@ are now `Voyage`, `Marker`, `Readout`, `ScreenCapture` and `Discord`.
 `site.html`, not `site.download_html`. So `marker.sighting(frame)`,
 `readout.reading(crop)`, `capture.frame(window)`, `Window.matching(...)`.
 
-Avoid `_maybe_` prefixes: they signal that the object does not own its own
+Avoid `_maybe_` prefixes, because they signal that the object does not own its own
 rules. `_worth_a_heartbeat` reads better than `_maybe_heartbeat`.
 
 ## Comments indicate a smell
@@ -43,7 +43,7 @@ Names should carry the meaning. The empirical narrative (what was measured, and
 why a constant is the value it is) belongs in [CONTEXT.md](CONTEXT.md), not
 scattered through the source.
 
-A comment survives only when the code alone cannot explain **why**: a magic
+A comment survives only when the code alone cannot explain **why**, so a magic
 number that came from measurement, or a guard whose absence caused a specific
 bug. Those comments are load-bearing. Decorative ones are not.
 
@@ -75,10 +75,10 @@ class TestSighting:
 
 - **No comments restating the name.** The name is the sentence.
 - **A module docstring carries the why** when tests exist because of a real
-  defect: what was seen, what it cost. Those are worth their space.
+  defect, so what was seen and what it cost. Those are worth their space.
 - **Do not test the language or the library.** Test the behaviour that is ours.
 - Time is a parameter to `Voyage`, so whole journeys replay instantly. Keep it
-  that way: no `sleep` in tests of the state machine.
+  that way, with no `sleep` in tests of the state machine.
 - Realistic data. Feeding a 3000m jump in one 30s poll tests nothing real, and
   an early version of these tests did exactly that.
 

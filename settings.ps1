@@ -1,6 +1,6 @@
 <#
-    Open the settings window: where alerts go, the Discord webhook, how much of
-    the screen to send, and the main thresholds.
+    Open the settings window for where alerts go, the Discord webhook, how much
+    of the screen to send, and the main thresholds.
 
     Usage:  .\settings.cmd
 #>

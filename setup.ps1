@@ -1,6 +1,6 @@
 <#
-    One-time setup: create the virtual environment, install dependencies,
-    and drop a config.toml in place.
+    One-time setup. Creates the virtual environment, installs dependencies,
+    and drops a config.toml in place.
 
     Usage:  .\setup.ps1
 #>

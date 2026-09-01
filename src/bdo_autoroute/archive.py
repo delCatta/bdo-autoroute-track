@@ -1,6 +1,6 @@
 """Disk housekeeping, and a curated archive of samples for later training.
 
-Working files expire. The archive does not: it is small, labelled, and biased
+Working files expire. The archive does not, being small, labelled, and biased
 towards failures, because a thousand clean reads of "600" teach a model nothing
 while one misread of 1169 as "9" teaches it a lot.
 """

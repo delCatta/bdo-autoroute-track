@@ -1,7 +1,7 @@
 <#
     Create (or refresh) a "BDO Autoroute Track" shortcut on the Desktop.
 
-    Safe to re-run: it overwrites its own shortcut in place.
+    Safe to re-run, because it overwrites its own shortcut in place.
     Pass -Remove to delete it again.
 
     Usage:  .\install-shortcut.ps1
@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location -Path $PSScriptRoot
 
-# GetFolderPath, not $env:USERPROFILE\Desktop: it follows OneDrive redirection.
+# GetFolderPath, not $env:USERPROFILE\Desktop, because it follows OneDrive redirection.
 $desktop = [Environment]::GetFolderPath('Desktop')
 $linkPath = Join-Path $desktop 'BDO Autoroute Track.lnk'
 
