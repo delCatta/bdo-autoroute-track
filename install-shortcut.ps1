@@ -1,5 +1,5 @@
 <#
-    Create (or refresh) a "BDO Boat Monitor" shortcut on the Desktop.
+    Create (or refresh) a "BDO Autoroute Track" shortcut on the Desktop.
 
     Safe to re-run: it overwrites its own shortcut in place.
     Pass -Remove to delete it again.
@@ -17,7 +17,7 @@ Set-Location -Path $PSScriptRoot
 
 # GetFolderPath, not $env:USERPROFILE\Desktop: it follows OneDrive redirection.
 $desktop = [Environment]::GetFolderPath('Desktop')
-$linkPath = Join-Path $desktop 'BDO Boat Monitor.lnk'
+$linkPath = Join-Path $desktop 'BDO Autoroute Track.lnk'
 
 if ($Remove) {
     if (Test-Path $linkPath) {
@@ -47,7 +47,7 @@ $shortcut.TargetPath = $powershell
 $shortcut.Arguments = "-NoExit -ExecutionPolicy Bypass -File `"$PSScriptRoot\run.ps1`""
 $shortcut.WorkingDirectory = $PSScriptRoot
 if (Test-Path $icon) { $shortcut.IconLocation = $icon }
-$shortcut.Description = 'Watch the BDO barter boat and alert on Discord when it arrives or gets stuck'
+$shortcut.Description = 'Watch the BDO auto-route and alert on Discord on arrival or a stall'
 $shortcut.WindowStyle = 1
 $shortcut.Save()
 

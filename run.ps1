@@ -15,5 +15,5 @@ if (-not (Test-Path $venvPython)) {
 }
 
 $env:PYTHONPATH = Join-Path $PSScriptRoot "src"
-& $venvPython -m bdo_tracker run @args
+& $venvPython -m bdo_autoroute run @args
 exit $LASTEXITCODE

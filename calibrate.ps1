@@ -19,5 +19,5 @@ Write-Host "is visible on screen right now." -ForegroundColor Cyan
 Write-Host ""
 
 $env:PYTHONPATH = Join-Path $PSScriptRoot "src"
-& $venvPython -m bdo_tracker calibrate @args
+& $venvPython -m bdo_autoroute calibrate @args
 exit $LASTEXITCODE

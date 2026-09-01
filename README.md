@@ -1,15 +1,17 @@
-# BDO Boat Monitor
+# BDO Autoroute Track
 
-**Stop alt-tabbing back every ten minutes to check your barter boat.**
+**Stop alt-tabbing back every ten minutes to check whether you have arrived.**
 
 Watches the **remaining-distance readout** on Black Desert Online's auto-route
-marker and pings you on Discord — with a screenshot — when your boat
-**arrives**, gets **stuck** on terrain, or **disappears** (client crash or
-disconnect).
+marker and pings you on Discord — with a screenshot — when you **arrive**, get
+**stuck** on terrain, or **lose the route** (client crash or disconnect).
+
+Any auto-route: barter voyages are what it was built for, but the marker is the
+same one land auto-pathing uses.
 
 ```
-21:04:12  SAILING     distance=3970m   eta=18m 20s  stalled=0s
-21:11:12  STUCK       distance=2140m   eta=-        stalled=3m 0s   -> Discord ping
+21:04:12  TRAVELLING   distance=3970m   eta=18m 20s  stalled=0s
+21:11:12  STUCK        distance=2140m   eta=-        stalled=3m 0s   -> Discord ping
 ```
 
 **Requirements: Windows 10/11, Python 3.11+, and Black Desert in Borderless
@@ -43,11 +45,11 @@ number tells you everything:
 
 | Distance behaviour | State | What it means |
 |---|---|---|
-| Falling steadily | `SAILING` | Under way. An ETA is extrapolated from the closing rate. |
-| Flat for too long | `STUCK` | Snagged on terrain. Jump off, swim out, re-summon the ship. |
+| Falling steadily | `TRAVELLING` | Under way. An ETA is extrapolated from the closing rate. |
+| Flat for too long | `STUCK` | Snagged on terrain. For a boat: jump off, swim out, re-summon it. |
 | At or below 70m | `ARRIVED` | You're there. |
 | Readout gone, was close or red | `ARRIVED` | The marker cleared on arrival. |
-| Readout gone, was far out | `SIGNAL_LOST` | Client crashed, disconnected, or the camera is turned away. |
+| Readout gone, was far out | `SIGNAL_LOST` | Client crashed, disconnected, or the camera turned away. |
 
 Three details drive the whole design, all of them learned from the real game
 rather than assumed:
@@ -91,8 +93,8 @@ concluded until `detect.missing_confirm_polls` (4) consecutive misses. A single
 miss changes nothing.
 
 Stuck detection tracks the **best distance seen and when it was seen**, rather
-than diffing consecutive readings. A boat rocking on the spot, or OCR jitter of
-a few metres, won't reset the stall timer — but real progress always does.
+than diffing consecutive readings. A boat rocking on the spot, or OCR jitter of a few
+metres, will not reset the stall timer - but real progress always does.
 
 ## Capture: the window, not the screen
 
@@ -158,9 +160,9 @@ clean reads of "600" teach a model nothing while one misread teaches it a lot.
 |---|---|
 | `unparsed` | marker found, but no number could be read |
 | `no_marker` | nothing matched — negative examples, stored as a downscaled frame |
-| `low_conf` | matched only just above the threshold |
+| `low_confidence` | matched only just above the threshold |
 | `red` | the near-arrival red text: rare, and easy to get wrong |
-| `ok` | ordinary successes, throttled to one per `sample_every_minutes` |
+| `ordinary` | clean reads, throttled to one per `sample_every_minutes` |
 
 Each sample is a PNG plus a JSON sidecar recording the raw OCR text, parsed
 value, red ratio, match confidence, boxes and state — enough to re-label later
@@ -202,7 +204,7 @@ That creates `.venv`, installs everything into it, and copies
 Check the game is being found at all:
 
 ```powershell
-.\.venv\Scripts\python.exe -m bdo_tracker windows
+.\.venv\Scripts\python.exe -m bdo_autoroute windows
 ```
 
 ## Calibrate
@@ -256,9 +258,9 @@ Leave it running while you're AFK. Console shows every poll; Discord gets alerts
 Ctrl+C stops it.
 
 ```
-06:53:54  INFO    ARRIVED     distance=41m     eta=-         stalled=0s
-06:54:25  INFO    SAILING     distance=1291m   eta=-         stalled=0s
-06:54:41  INFO    SAILING     distance=1264m   eta=12m 7s    stalled=0s
+06:53:54  INFO    ARRIVED      distance=41m     eta=-         stalled=0s
+06:54:25  INFO    TRAVELLING   distance=1291m   eta=-         stalled=0s
+06:54:41  INFO    TRAVELLING   distance=1264m   eta=12m 7s    stalled=0s
 ```
 
 Other commands:
@@ -297,7 +299,7 @@ Set `debug.save_crops = true` to write every crop to `debug/`.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-120 tests. The state machine takes time as a parameter, so the tests replay whole
+144 tests. The state machine takes time as a parameter, so the tests replay whole
 voyages - jitter, recovery from stuck, new routes, dropped readings, red-text
 arrival, and the exact OCR misread seen live - instantly.
 
@@ -344,15 +346,18 @@ Licensed under the [MIT License](LICENSE).
 ## Layout
 
 ```
-src/bdo_tracker/
-  capture.py    find the game window; window or screen capture (read-only)
-  locator.py    template-match the moving route marker, derive the digits box
-  ocr.py        preprocess the crop, OCR it, parse metres, detect red text
-  detector.py   distance readings -> SAILING / STUCK / ARRIVED / SIGNAL_LOST
-  notify.py     Discord webhook delivery with an attached screenshot
-  calibrate.py  two-box region picker
-  storage.py    prune working files, curate the training sample archive
-  cli.py        commands and the polling loop
-tests/          state machine, marker location, OCR parsing, red indicator,
-                misread guards, retention and sampling
+src/bdo_autoroute/
+  window.py       the game window; window or screen capture (read-only)
+  marker.py       Marker, Sighting, Box, Offset - finding the moving marker
+  readout.py      Readout, Reading, Glyphs - crop to a number
+  observation.py  Observation - what one look at the screen amounts to
+  voyage.py       Voyage, Progress, State - readings to TRAVELLING / STUCK /
+                  ARRIVED / SIGNAL_LOST
+  alerts.py       Alert - what gets said, and how loudly
+  discord.py      Discord - delivery, and nothing about routes
+  archive.py      Archive - expire working files, curate training samples
+  picker.py       Picker - dragging the two calibration boxes
+  monitor.py      Monitor - the polling loop
+  commands.py     one function per CLI verb
+  cli.py          argument parsing and dispatch
 ```

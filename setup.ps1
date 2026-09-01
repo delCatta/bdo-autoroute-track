@@ -8,7 +8,7 @@
 $ErrorActionPreference = "Stop"
 Set-Location -Path $PSScriptRoot
 
-Write-Host "BDO Boat Monitor - setup" -ForegroundColor Cyan
+Write-Host "BDO Autoroute Track - setup" -ForegroundColor Cyan
 Write-Host ""
 
 # --- locate a real Python ------------------------------------------------

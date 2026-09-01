@@ -1,4 +1,4 @@
-# Handoff — BDO Boat Monitor
+# Handoff — BDO Autoroute Track
 
 Engineering context for anyone picking this up: why it is built the way it is,
 and which obvious-looking assumptions are provably wrong. Read this before
@@ -13,7 +13,7 @@ marker's **remaining-distance number** and pushes a Discord alert — with a
 screenshot — when the barter boat **arrives**, gets **stuck**, or **vanishes**
 (client crash / disconnect). Built so you can AFK-sail without alt-tabbing back every ten minutes.
 
-**Status: working and verified against the live game.** 120 tests pass.
+**Status: working and verified against the live game.** 144 tests pass.
 
 ## 2. Prior art (researched, September 2026)
 
@@ -61,24 +61,60 @@ capture or reading logic, re-read this section first.
 ## 4. Architecture
 
 ```
-src/bdo_tracker/
-  capture.py    find the game window; Windows Graphics Capture or screen grab
-  locator.py    template-match the moving route marker, derive the digits box
-  ocr.py        preprocess crop, OCR, parse metres, detect red text
-  detector.py   readings -> SAILING / STUCK / ARRIVED / SIGNAL_LOST
-  notify.py     Discord webhook + attached screenshot
-  storage.py    prune working files, curate the training sample archive
-  calibrate.py  two-box region picker (Tkinter)
-  cli.py        commands and the polling loop
+src/bdo_autoroute/
+  window.py       Window, ScreenCapture, WindowCapture, PreferredCapture
+  marker.py       Marker, Sighting, Box, Offset
+  readout.py      Readout, Reading, Glyphs, engines
+  observation.py  Observation - one look at the screen
+  voyage.py       Voyage, Progress, State, Status, Event
+  alerts.py       Alert - wording and urgency
+  discord.py      Discord - delivery only
+  archive.py      Archive, expire
+  picker.py       Picker - the two calibration boxes
+  monitor.py      Monitor - the polling loop
+  commands.py     one function per CLI verb
+  cli.py          parsing and dispatch
 ```
 
-Flow per poll: grab window frame → template-match icon → crop digits at offset →
-upscale/threshold/invert → OCR → parse → feed state machine → alert on transition.
+Flow per poll: Window.matching -> Capture.frame -> Marker.sighting -> Readout.reading
+-> Observation -> Voyage.update -> Alert -> Discord.deliver.
 
-**Stuck detection** tracks the *best distance seen and when*, not consecutive
-diffs. Jitter and a rocking boat don't reset the stall timer; real progress does.
+**Stuck detection** lives on `Progress`, which tracks the best distance reached
+and when. Jitter and drift never masquerade as movement; real progress always
+resets the stall timer.
 
-## 5. Bugs found in live testing — do not reintroduce these
+## 5. Conventions
+
+Python, written to Rails/37signals conventions. Match these when changing it.
+
+**Rich objects, thin orchestration.** Behaviour lives on the object that owns
+the data. `Voyage` decides what a reading means, `Alert` decides what gets said
+and how loudly, `Observation` answers what one look at the screen amounts to.
+`Monitor` only looks, tells `Voyage`, and passes on what comes back — and
+`Discord` knows nothing about routes.
+
+**Nouns, not action-performers.** `Analysis`, not `Analyzer`. An earlier draft
+had `VoyageDetector`, `MarkerLocator`, `DistanceReader`, `ScreenGrabber` and
+`DiscordNotifier`; they are now `Voyage`, `Marker`, `Readout`, `ScreenCapture`
+and `Discord`.
+
+**Declarative methods.** `site.html`, not `site.download_html`. So
+`marker.sighting(frame)`, `readout.reading(crop)`, `capture.frame(window)`.
+
+**Comments are a smell.** Names should carry the meaning. The empirical
+narrative — what was measured, and why a constant is the value it is — belongs
+in this document, not scattered through the source. Where a comment survives, it
+is because the code alone cannot explain *why* a value was chosen.
+
+**Extract an object when** there are many branches, a method grows long, or
+several methods keep taking the same arguments together. `Observation` and
+`Progress` both came from that last rule.
+
+**Test names start with the method and say what it does, present tense:**
+`test_sighting_finds_the_icon_wherever_it_sits`. Grouped in classes per method.
+No comments restating the name.
+
+## 6. Bugs found in live testing — do not reintroduce these
 
 Each was found only by running against the real game. All have regression tests.
 
@@ -87,14 +123,14 @@ Measured on a real 3440×1440 frame: the marker scores **1.000**, ordinary deck
 scenery tops out at **0.716**. The original default of 0.70 would have matched
 random texture and reported fabricated distances. Default is now **0.85**, and
 `calibrate` measures this separation for your own setup and warns.
-→ `tests/test_locator.py::test_best_confidence_separates_present_from_absent`
+→ `tests/test_marker.py::TestConfidenceIn`
 
 **#2 — Digits clipped, causing a 10× error.**
 A live reading of **14000 was read as 1400**. The digits box preserved the 17px
 gap measured when calibrating on "600", but with five digits the text sits ~8px
 from the icon, so the last digit fell outside the box. The box now extends right
 to `icon_left - ICON_CLEARANCE_PX` (3) instead of preserving the calibrated gap.
-→ `tests/test_locator.py::test_box_reaches_to_just_short_of_the_icon`
+→ `tests/test_marker.py::TestOffsetBetween`
 
 **#3 — OCR misread `1169` as `9`.**
 Raw OCR returned `"11'69 9"`. Two defects plus a missing guard:
@@ -104,7 +140,7 @@ Raw OCR returned `"11'69 9"`. Two defects plus a missing guard:
   with the **most digits**
 - one sub-threshold reading declared arrival → arrival now needs **two
   consecutive** readings (`arrival_confirm_polls`), bypassed by the red indicator
-→ `tests/test_misread_guards.py`
+→ `tests/test_readout.py::TestDistanceIn and tests/test_voyage.py::TestUpdate`
 
 **#4 — Template mismatch across capture backends.**
 Screen capture and Graphics Capture render colours slightly differently. A
@@ -117,7 +153,7 @@ Switching to a nearer destination (10710m → 657m) made the rate estimate avera
 across the jump, reporting `eta=0s`. Rate history now resets on any change
 faster than `MAX_CLOSING_SPEED_MPS` (40 m/s; real cruising is ~20 m/s), and an
 implausible rate yields no ETA rather than a confident wrong one.
-→ `tests/test_detector.py::test_a_route_change_does_not_poison_the_eta`
+→ `tests/test_voyage.py::TestEta`
 
 **#6 — Black Desert does not minimise like a normal window.**
 Measured by minimising it by hand:
@@ -138,7 +174,7 @@ would photograph other apps and give confidently wrong readings.
 **Untested:** whether Graphics Capture can read a hidden BDO window - the window
 was restored before the test could run. Also note BDO ignores programmatic
 SW_MINIMIZE/SW_FORCEMINIMIZE, so this can only be tested by hand.
--> `tests/test_minimised.py`
+-> `tests/test_window.py`
 
 **#7 — OCR dropped leading digits at brightness_threshold 150.**
 A live crop of 740m came back as `'/40'` - the 7 misread as a slash and dropped,
@@ -158,7 +194,7 @@ Default is now 120. Re-run that comparison if the OCR pipeline changes.
 Returns an all-black frame for every flag (`PW_RENDERFULLCONTENT` included), as
 for most DirectX games. Do not try it again. Windows Graphics Capture works.
 
-## 6. Local state — what never gets committed
+## 7. Local state - what never gets committed
 
 Four things are per-machine and deliberately gitignored. A fresh clone has none
 of them, which is why `setup.ps1` then `calibrate.ps1` are the required first
@@ -183,7 +219,7 @@ rejects it.
 ⚠️ Before ever committing, confirm `git status` does not list `config.toml`.
 One Discord webhook URL in public history is a channel anyone can spam.
 
-## 7. Verified vs not verified
+## 8. Verified vs not verified
 
 **Verified against the live game:**
 - arrival detected at 41m → alert with ping + screenshot
@@ -205,7 +241,7 @@ One Discord webhook URL in public history is a channel anyone can spam.
 - `SIGNAL_LOST` from an actual client crash.
 - Behaviour at a resolution other than 3440×1440 (scaling code exists, untested).
 
-## 8. Running it
+## 9. Running it
 
 ```powershell
 .\setup.ps1        # once
@@ -213,14 +249,14 @@ One Discord webhook URL in public history is a channel anyone can spam.
 .\run.ps1          # the monitor
 .\test-notify.ps1  # prove the webhook works
 .\shot.ps1         # one-off: locate marker, report what it reads
-.\.venv\Scripts\python.exe -m bdo_tracker windows   # which window matched
+.\.venv\Scripts\python.exe -m bdo_autoroute windows   # which window matched
 .\.venv\Scripts\python.exe -m pytest                # 118 tests
 ```
 
 A desktop shortcut, **"BDO Boat Monitor"**, runs `run.ps1` in a window that
 stays open (Ctrl+C to stop).
 
-## 9. Ideas if the work continues
+## 10. Ideas if the work continues
 
 - Tune `stuck_after_seconds` against a real stuck boat.
 - Log voyages to SQLite (destination, duration, stuck events) to find which
@@ -231,7 +267,7 @@ stays open (Ctrl+C to stop).
 - Multi-client support (several BDO windows) — `find_client_area` currently
   takes the first match.
 
-## 10. Constraint to preserve
+## 11. Constraint to preserve
 
 The tool is **strictly read-only with respect to the game**: screen capture
 only, never memory reads, never DLL injection, never sending input. That is what
