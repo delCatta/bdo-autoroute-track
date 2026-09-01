@@ -120,6 +120,36 @@ class Monitor:
     def outbox(self) -> Outbox:
         return self._outbox
 
+    def apply(self, settings: Settings, outbox: Outbox) -> None:
+        """Adopt new settings mid-run. Nothing is restarted.
+
+        The poll interval, screenshot policy and thresholds are all read fresh
+        each poll, so swapping them is enough. The marker is dropped so it is
+        rebuilt at the new match threshold.
+        """
+        self._settings = settings
+        self._outbox = outbox
+        self._readout = build_readout(settings)
+        self._marker = None
+        self._marker_size = None
+        self._heartbeat.interval = settings.heartbeat_seconds
+        self._nagging.interval = settings.stuck_realert_seconds
+        self._archive.max_per_category = settings.samples_max_per_category
+        self._archive.min_interval_seconds = settings.sample_interval_seconds
+        self._archive.enabled = settings.samples_enabled
+        self._voyage.retune(
+            arrival_threshold_m=settings.arrival_threshold_m,
+            movement_epsilon_m=settings.movement_epsilon_m,
+            stuck_after_seconds=settings.stuck_after_seconds,
+            missing_confirm_polls=settings.missing_confirm_polls,
+            near_arrival_m=settings.near_arrival_m,
+            arrival_confirm_polls=settings.arrival_confirm_polls,
+            approaching_m=settings.approaching_m,
+            stalling_after_seconds=settings.stalling_after_seconds,
+        )
+        log.info("Settings applied: watching every %ds via %s.",
+                 settings.poll_interval_seconds, ", ".join(outbox.names) or "nothing")
+
     def watch(self, observer) -> None:
         """Call `observer(status)` after every poll. Used by the tray."""
         self._observers.append(observer)

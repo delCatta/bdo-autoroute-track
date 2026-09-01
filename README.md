@@ -49,9 +49,19 @@ all. Each alert carries a screenshot of the moment it fired.
 .	ray.cmd
 ```
 
-Puts it in the notification area with the current state in the tooltip, and a
-right-click menu to **mute notifications**, **pause watching**, open the logs
-folder, or quit. `run.cmd` is the same thing in a console window.
+The icon **changes colour with the state** - blue under way, orange stalled, red
+lost, green arrived, grey when muted or paused - so a glance at the tray answers
+"how is it going?" without opening anything. Hover for the full picture:
+
+```
+BDO Autoroute Track
+Looks stuck - 3170m remaining
+No progress for 3m 5s
+checked 11:28:44
+```
+
+Right-click for state, **mute notifications**, **pause watching**, **Settings**,
+open the logs folder, and quit. `run.cmd` is the same monitor in a console.
 
 ## Quick start
 
@@ -310,6 +320,14 @@ On a 3440×1440 window that is the difference between sending 3440×1440 and
 **721×112**. `none` sends text only. Nothing else leaves the machine: no
 telemetry, no analytics, and the samples archive stays local.
 
+**The webhook is a bearer credential** - anyone holding that URL can post to
+your channel. Saving from Settings encrypts it against your Windows account
+using DPAPI, and `.\.venv\Scripts\python.exe -m bdo_autoroute protect`
+encrypts one already in `config.toml`. Encrypted values start with `enc:` and
+are useless on another machine or under another Windows user, so a config that
+gets zipped or synced carries nothing usable. It does **not** protect against
+something already running as you.
+
 ## Housekeeping
 
 **Logging to a file is off by default.** Turn it on with `--log`, or set
@@ -379,7 +397,7 @@ Issues and PRs welcome, particularly:
 - **Non-English clients**, where the readout may differ.
 
 Run `pytest` before opening a PR. If you are changing how frames are captured or
-read, **read [HANDOFF.md](HANDOFF.md) first** — it documents several assumptions
+read, **read [.claude/CONTEXT.md](.claude/CONTEXT.md) first** — it documents several assumptions
 that look obviously correct and are provably wrong.
 
 ## Prior art

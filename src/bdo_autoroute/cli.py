@@ -18,6 +18,9 @@ log = logging.getLogger("bdo_autoroute")
 LOGS = ROOT / "logs"
 LOG_FILE = LOGS / "autoroute.log"
 
+# These run before, or instead of, a working config.
+CONFIGLESS = {"settings", "protect"}
+
 COMMANDS = {
     "calibrate": commands.calibrate,
     "run": commands.run,
@@ -25,6 +28,8 @@ COMMANDS = {
     "shot": commands.shot,
     "test-notify": commands.test_notify,
     "windows": commands.windows,
+    "settings": commands.configure,
+    "protect": commands.protect,
 }
 
 
@@ -69,6 +74,10 @@ def parser() -> argparse.ArgumentParser:
     subcommands.add_parser("shot", parents=[common], help="one look, for troubleshooting")
     subcommands.add_parser("test-notify", parents=[common], help="send a test alert")
     subcommands.add_parser("windows", parents=[common], help="list windows and which match")
+    subcommands.add_parser("settings", parents=[common], help="open the settings window")
+    subcommands.add_parser(
+        "protect", parents=[common], help="encrypt the webhook already in config.toml"
+    )
     return parsed
 
 
@@ -109,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     start_logging(getattr(args, "verbose", False))
     try:
+        if args.command in CONFIGLESS:
+            return COMMANDS[args.command](None, args)
+
         settings = Settings.load()
         if settings.log_to_file or getattr(args, "log", False):
             also_log_to_file(settings)

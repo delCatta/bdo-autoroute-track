@@ -2,7 +2,7 @@
 
 The marker follows a world position, so it slides around as the camera turns.
 Its icon is matched across the whole frame and the digits are read from a box
-placed relative to wherever the icon turned up. See HANDOFF.md sections 3 and 6.
+placed relative to wherever the icon turned up. See .claude/CONTEXT.md.
 """
 
 from __future__ import annotations

@@ -12,6 +12,7 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
 from .marker import Box, Offset
+from .vault import revealed
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config.toml"
@@ -236,7 +237,7 @@ class Settings:
             stalling_after_seconds=detect.get(
                 "stalling_after_seconds", fallback.stalling_after_seconds
             ),
-            webhook_url=notify.get("discord_webhook_url", fallback.webhook_url),
+            webhook_url=revealed(notify.get("discord_webhook_url", fallback.webhook_url)),
             channels=notify.get("channels", fallback.channels),
             screenshot=notify.get("screenshot", _legacy_screenshot(notify, fallback)),
             heartbeat_minutes=notify.get("heartbeat_minutes", fallback.heartbeat_minutes),

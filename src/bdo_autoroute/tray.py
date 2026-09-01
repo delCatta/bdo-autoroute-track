@@ -10,17 +10,81 @@ from __future__ import annotations
 import logging
 import threading
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 from PIL import Image
 
+from .icons import every_state, for_state
 from .monitor import Monitor
-from .voyage import Status, duration
+from .voyage import State, Status, duration
 
 log = logging.getLogger(__name__)
 
 TITLE = "BDO Autoroute Track"
-FALLBACK_ICON_SIZE = 64
+
+
+class Facts:
+    """What the tray knows, phrased for a menu that has no room to explain.
+
+    Kept apart from the icon so the wording can be tested without a desktop.
+    """
+
+    def __init__(self) -> None:
+        self.state = State.STARTING
+        self.distance_m: float | None = None
+        self.eta_seconds: float | None = None
+        self.stalled_seconds = 0.0
+        self.seen_at: datetime | None = None
+        self.channels: list[str] = []
+        self.muted = False
+        self.paused = False
+
+    def update(self, status: Status, *, channels: list[str], muted: bool, paused: bool) -> None:
+        self.state = status.state
+        self.distance_m = status.distance_m
+        self.eta_seconds = status.eta_seconds
+        self.stalled_seconds = status.stalled_seconds
+        self.seen_at = datetime.now()
+        self.channels = channels
+        self.muted = muted
+        self.paused = paused
+
+    @property
+    def headline(self) -> str:
+        if self.paused:
+            return "Paused"
+        return self.state.headline
+
+    @property
+    def distance(self) -> str:
+        if self.distance_m is None:
+            return "Distance unknown"
+        return f"{self.distance_m:.0f}m remaining"
+
+    @property
+    def timing(self) -> str:
+        if self.stalled_seconds >= 1:
+            return f"No progress for {duration(self.stalled_seconds)}"
+        if self.eta_seconds:
+            return f"About {duration(self.eta_seconds)} to go"
+        return "Working out the pace"
+
+    @property
+    def delivery(self) -> str:
+        if self.muted:
+            return "Notifications muted"
+        if not self.channels:
+            return "Nowhere to send alerts"
+        return "Alerting " + " and ".join(self.channels)
+
+    @property
+    def tooltip(self) -> str:
+        seen = f"checked {self.seen_at:%H:%M:%S}" if self.seen_at else "starting up"
+        lines = [TITLE, f"{self.headline} - {self.distance}", self.timing, seen]
+        if self.muted:
+            lines.append("muted")
+        return "\n".join(lines)
 
 
 class Tray:
@@ -42,14 +106,18 @@ class Tray:
         self._pystray = pystray
         self._monitor = monitor
         self._logs = logs
-        self._state = "starting up"
         self._worker: threading.Thread | None = None
+        self._icons = every_state()
+        self._facts = Facts()
         self._icon = pystray.Icon(
             "bdo_autoroute",
             self._image(icon),
             TITLE,
             menu=pystray.Menu(
-                pystray.MenuItem(lambda _item: self._state, None, enabled=False),
+                pystray.MenuItem(lambda _item: self._facts.headline, None, enabled=False),
+                pystray.MenuItem(lambda _item: self._facts.distance, None, enabled=False),
+                pystray.MenuItem(lambda _item: self._facts.timing, None, enabled=False),
+                pystray.MenuItem(lambda _item: self._facts.delivery, None, enabled=False),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem(
                     "Mute notifications",
@@ -62,6 +130,7 @@ class Tray:
                     checked=lambda _item: self._monitor.paused,
                 ),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Settings...", self._settings),
                 pystray.MenuItem("Open logs folder", self._open_logs),
                 pystray.MenuItem("Quit", self._quit),
             ),
@@ -79,22 +148,29 @@ class Tray:
         return 0
 
     def _remember(self, status: Status) -> None:
-        """Keep the tooltip current. Called after every poll."""
-        distance = f"{status.distance_m:.0f}m" if status.distance_m is not None else "unknown"
-        self._state = f"{status.state.value} - {distance}"
-        if status.stalled_seconds >= 1:
-            self._state += f", stalled {duration(status.stalled_seconds)}"
-        if self._monitor.outbox.muted:
-            self._state += " (muted)"
+        """Take in one poll. Called after every one."""
+        self._facts.update(
+            status,
+            channels=self._monitor.outbox.names,
+            muted=self._monitor.outbox.muted,
+            paused=self._monitor.paused,
+        )
         self._refresh()
 
     def _refresh(self) -> None:
-        """Push the current state into the tooltip and the menu."""
+        """Push the state into the icon, the tooltip and the menu."""
         try:
-            self._icon.title = f"{TITLE}\n{self._state}"
+            self._icon.icon = self._icon_for()
+            self._icon.title = self._facts.tooltip
             self._icon.update_menu()
         except Exception as exc:
             log.debug("Could not refresh the tray: %s", exc)
+
+    def _icon_for(self) -> Image.Image:
+        """Paused looks like idle; muted greys the hull."""
+        state = State.STARTING if self._monitor.paused else self._facts.state
+        muted = self._monitor.outbox.muted
+        return self._icons.get((state, muted)) or for_state(state, muted=muted)
 
     def _toggle_mute(self, _icon=None, _item=None) -> None:
         """Stop delivering alerts, while carrying on watching.
@@ -105,14 +181,45 @@ class Tray:
         outbox = self._monitor.outbox
         outbox.muted = not outbox.muted
         log.info("Notifications %s.", "muted" if outbox.muted else "unmuted")
+        self._facts.muted = outbox.muted
         self._refresh()
 
     def _toggle_pause(self, _icon=None, _item=None) -> None:
         """Stop polling entirely. Nothing is read, so nothing is missed either."""
         self._monitor.paused = not self._monitor.paused
         log.info("Watching %s.", "paused" if self._monitor.paused else "resumed")
-        if self._monitor.paused:
-            self._state = "paused"
+        self._facts.paused = self._monitor.paused
+        self._refresh()
+
+    def _settings(self, _icon=None, _item=None) -> None:
+        """Open the settings window on its own thread.
+
+        Tk insists on owning whichever thread it runs on, and this one belongs
+        to pystray.
+        """
+        def show() -> None:
+            from .configure import SettingsWindow
+
+            try:
+                if SettingsWindow(applies_live=True).show():
+                    self._reload()
+            except Exception as exc:
+                log.warning("Could not open settings: %s", exc)
+
+        threading.Thread(target=show, daemon=True).start()
+
+    def _reload(self) -> None:
+        """Adopt the saved settings without restarting anything."""
+        from .commands import build_outbox
+        from .settings import Settings
+
+        try:
+            settings = Settings.load()
+        except Exception as exc:
+            log.error("Saved settings could not be loaded: %s", exc)
+            return
+
+        self._monitor.apply(settings, build_outbox(settings))
         self._refresh()
 
     def _open_logs(self, _icon=None, _item=None) -> None:
@@ -128,11 +235,5 @@ class Tray:
             self._worker.join(timeout=10)
         self._icon.stop()
 
-    @staticmethod
-    def _image(icon: Path | None) -> Image.Image:
-        if icon is not None and icon.exists():
-            try:
-                return Image.open(icon)
-            except Exception as exc:
-                log.debug("Could not load %s: %s", icon, exc)
-        return Image.new("RGB", (FALLBACK_ICON_SIZE, FALLBACK_ICON_SIZE), (24, 28, 38))
+    def _image(self, _icon: Path | None) -> Image.Image:
+        return self._icons[(State.STARTING, False)]

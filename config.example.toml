@@ -75,6 +75,12 @@ arrival_confirm_polls = 2
 channels = ["discord", "desktop"]
 
 # Create one under Discord: Channel > Edit Channel > Integrations > Webhooks.
+#
+# Anyone holding this URL can post to that channel, so it is worth protecting.
+# Saving from the settings window encrypts it against your Windows account, and
+# `protect` encrypts one that is already here. Encrypted values start with
+# "enc:" and are useless on another machine or under another Windows user.
+# Plain URLs keep working.
 discord_webhook_url = ""
 
 # How much of the screen an alert may carry.

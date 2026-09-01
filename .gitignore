@@ -7,6 +7,11 @@ venv/
 calibration.json
 config.toml
 
+# Session handoff notes: working notes about a moment, not documentation.
+# Anything durably true belongs in .claude/CONTEXT.md instead.
+.claude/handoffs/*
+!.claude/handoffs/.gitkeep
+
 # Local logs, rotated at 2MB x 5
 logs/
 

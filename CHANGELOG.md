@@ -2,6 +2,24 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## Unreleased
+
+### Added
+
+- **Settings window.** `setup.cmd` finishes by opening it, and it is on the tray
+  menu. Covers where alerts go, the webhook (with a Test button), how much of
+  the screen to send, and the main thresholds. Saved changes **apply
+  immediately** - the Voyage is retuned in place rather than rebuilt, so the
+  journey and its stall timer survive.
+- **The webhook can be encrypted.** Saving from Settings protects it with
+  Windows DPAPI; `protect` encrypts one already in `config.toml`. Encrypted
+  values start with `enc:` and are useless elsewhere. Plain URLs keep working.
+- **The tray icon carries the state** in its colour, from the same palette the
+  Discord embeds use, and greys out when muted. The menu shows state, distance,
+  pace or stall, and where alerts are going.
+- Editing `config.toml` keeps every comment: values are replaced line by line
+  rather than round-tripped through a TOML writer.
+
 ## 0.1.0 — 2026-09-01
 
 First release. Every state has now been observed against the live game.
@@ -38,7 +56,7 @@ First release. Every state has now been observed against the live game.
 ### Learned the hard way
 
 Each of these was a real defect found by running against the game, and each has
-a regression test. [HANDOFF.md](HANDOFF.md) has the full accounting.
+a regression test. [.claude/CONTEXT.md](.claude/CONTEXT.md) has the full accounting.
 
 - The marker is **anchored to a world position** and moves with the camera, so
   it is template-matched across the whole frame rather than cropped from a fixed

@@ -236,6 +236,46 @@ def run(settings: Settings, args) -> int:
     return monitor.run(once=args.once)
 
 
+def configure(_settings: Settings | None, _args) -> int:
+    """Open the settings window."""
+    from .configure import SettingsWindow
+
+    SettingsWindow().show()
+    return 0
+
+
+def protect(_settings: Settings | None, _args) -> int:
+    """Encrypt the webhook already sitting in config.toml."""
+    from .configfile import ConfigFile
+    from .configure import ensure_config
+    from .vault import PREFIX, available, masked, protected
+
+    if not available():
+        log.error("Windows DPAPI is unavailable, so the webhook cannot be encrypted.")
+        return 2
+
+    path = ensure_config()
+    config = ConfigFile(path)
+    stored = (config.get("notify", "discord_webhook_url") or "").strip().strip('"')
+
+    if not stored:
+        log.info("No webhook in %s; nothing to protect.", path.name)
+        return 0
+    if stored.startswith(PREFIX):
+        log.info("The webhook in %s is already encrypted.", path.name)
+        return 0
+
+    config.set("notify", "discord_webhook_url", protected(stored))
+    config.save()
+    log.info(
+        "Encrypted the webhook in %s (%s). It can now only be read by this "
+        "Windows account on this machine.",
+        path.name,
+        masked(stored),
+    )
+    return 0
+
+
 def tray(settings: Settings, _args) -> int:
     """Run the monitor behind a system tray icon."""
     from .tray import Tray

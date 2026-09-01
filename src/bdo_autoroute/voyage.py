@@ -114,6 +114,9 @@ class Progress:
     def best(self) -> float | None:
         return self._best
 
+    def retune(self, epsilon_m: float) -> None:
+        self._epsilon = epsilon_m
+
     def restart(self) -> None:
         self._best = None
         self._best_at = None
@@ -193,6 +196,41 @@ class Voyage:
         self._unconfirmed: float | None = None
         self._seen_at: float | None = None
         self._held: float | None = None
+
+    def retune(
+        self,
+        *,
+        arrival_threshold_m: float | None = None,
+        movement_epsilon_m: float | None = None,
+        stuck_after_seconds: float | None = None,
+        missing_confirm_polls: int | None = None,
+        near_arrival_m: float | None = None,
+        arrival_confirm_polls: int | None = None,
+        approaching_m: float | None = None,
+        stalling_after_seconds: float | None = None,
+    ) -> None:
+        """Change the thresholds mid-journey, keeping progress and state.
+
+        Rebuilding the Voyage would be simpler and would silently restart the
+        trip, losing the stall timer at the moment somebody is most likely to be
+        fiddling with the stuck threshold.
+        """
+        if arrival_threshold_m is not None:
+            self._arrival_threshold = arrival_threshold_m
+        if stuck_after_seconds is not None:
+            self._stuck_after = stuck_after_seconds
+        if missing_confirm_polls is not None:
+            self._missing_confirm = max(1, missing_confirm_polls)
+        if near_arrival_m is not None:
+            self._near_arrival = near_arrival_m
+        if arrival_confirm_polls is not None:
+            self._arrival_confirm = max(1, arrival_confirm_polls)
+        if approaching_m is not None:
+            self._approaching_m = approaching_m
+        if stalling_after_seconds is not None:
+            self._stalling_after = stalling_after_seconds
+        if movement_epsilon_m is not None:
+            self._progress.retune(movement_epsilon_m)
 
     @property
     def state(self) -> State:

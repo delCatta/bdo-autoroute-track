@@ -1,7 +1,7 @@
 """Reading the remaining-distance number off a crop of the marker.
 
 Thresholding uses the max colour channel rather than luminance: the game turns
-the text red near the destination, and red is dim by luminance. See HANDOFF.md
+the text red near the destination, and red is dim by luminance. See .claude/CONTEXT.md
 sections 3 and 5.
 """
 

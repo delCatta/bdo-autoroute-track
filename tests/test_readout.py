@@ -1,6 +1,6 @@
 """Readout: turning a crop of the marker into a number.
 
-The misread cases here are real ones seen against the live game; HANDOFF.md
+The misread cases here are real ones seen against the live game; .claude/CONTEXT.md
 sections 5 and 7 record where each came from.
 """
 

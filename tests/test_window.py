@@ -1,7 +1,7 @@
 """Window: geometry, and what minimising really does.
 
 Black Desert does not minimise like an ordinary window. Measured on a real
-client, and the reason the obvious guards do not work: HANDOFF.md section 6, #6.
+client, and the reason the obvious guards do not work: .claude/CONTEXT.md, #6.
 
     Ordinary window   IsIconic=True   drawable 0x0        rect (-32000,-32000)
     Black Desert      IsIconic=FALSE  drawable 3440x1440  rect (0,0,3440,1440)

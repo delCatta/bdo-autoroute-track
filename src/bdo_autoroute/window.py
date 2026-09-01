@@ -26,7 +26,7 @@ class CaptureError(RuntimeError):
 
 
 class WindowMinimised(CaptureError):
-    """Minimised or hidden, so there are no pixels to read. See HANDOFF.md section 6, #6."""
+    """Minimised or hidden, so there are no pixels to read. See .claude/CONTEXT.md, #6."""
 
 
 def process_name(hwnd: int) -> str:
