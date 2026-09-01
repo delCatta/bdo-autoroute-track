@@ -103,6 +103,21 @@ class Alert:
         )
 
     @classmethod
+    def watching(cls, status: Status) -> "Alert":
+        """The first word after starting up: watching, and the webhook works.
+
+        Deliberately not "still under way". This fires before any progress has
+        been observed, and once claimed motion on a route that had not moved.
+        """
+        return cls(
+            headline="Now watching",
+            body=f"{status.distance_m:.0f}m remaining.",
+            state=status.state,
+            urgent=False,
+            details={"ETA": duration(status.eta_seconds)},
+        )
+
+    @classmethod
     def heartbeat(cls, status: Status) -> "Alert":
         return cls(
             headline="Still under way",

@@ -197,6 +197,11 @@ contains the phrase), and the game. EnumWindows returns z-order, and the code
 took the first match, so alt-tabbing to read an alert silently switched capture
 to Discord. The game is now identified by process (`BlackDesert64.exe`), with
 the title as fallback only, and a warning when several titles match.
+
+The failure was self-inflicting, and the log shows it: a stall alert went out at
+10:33:16, the user switched to Discord to read it, and from the next poll the
+marker was gone. Four missing polls later it reported SIGNAL_LOST. Alerting the
+user is what blinded it.
 -> `tests/test_window_choice.py`
 
 **#9 — `PrintWindow` does not work on BDO.**

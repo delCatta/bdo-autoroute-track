@@ -121,3 +121,30 @@ class TestTimer:
 
     def test_an_interval_of_zero_is_never_due(self):
         assert not Timer(interval=0).due(now=1000.0)
+
+
+class TestFirstHeartbeatWording:
+    """The first heartbeat must not claim motion it has not seen.
+
+    Live at 10:32:44 it said "Still under way" about a route that had been
+    motionless for 31s. It fires before any progress can be measured, so it
+    reports that it is watching instead.
+    """
+
+    def test_the_first_heartbeat_says_it_is_watching(self, tmp_path):
+        watcher, _ = monitor(tmp_path)
+        assert watcher._heartbeat_for(travelling(4810)).headline == "Now watching"
+
+    def test_later_heartbeats_report_progress(self, tmp_path):
+        watcher, _ = monitor(tmp_path)
+        watcher._heartbeat_for(travelling(4810))
+        assert watcher._heartbeat_for(travelling(4600)).headline == "Still under way"
+
+    def test_neither_is_urgent(self, tmp_path):
+        watcher, _ = monitor(tmp_path)
+        assert not watcher._heartbeat_for(travelling(4810)).urgent
+        assert not watcher._heartbeat_for(travelling(4600)).urgent
+
+    def test_the_greeting_still_reports_the_distance(self, tmp_path):
+        watcher, _ = monitor(tmp_path)
+        assert "4810m" in watcher._heartbeat_for(travelling(4810)).body

@@ -78,6 +78,7 @@ class Monitor:
         self._warned_blank = False
         self._heartbeat = Timer(settings.heartbeat_seconds)
         self._last_heartbeat_distance: float | None = None
+        self._greeted = False
         self._nagging = Timer(settings.stuck_realert_seconds)
         self._archive = Archive(
             root=samples_dir or Path("samples"),
@@ -170,7 +171,14 @@ class Monitor:
             return
 
         if status.travelling and self._worth_a_heartbeat(status, now):
-            self._send(Alert.heartbeat(status), frame)
+            self._send(self._heartbeat_for(status), frame)
+
+    def _heartbeat_for(self, status: Status) -> Alert:
+        """The first one says it is watching; later ones report progress."""
+        if self._greeted:
+            return Alert.heartbeat(status)
+        self._greeted = True
+        return Alert.watching(status)
 
     def _worth_a_heartbeat(self, status: Status, now: float) -> bool:
         """Due by the clock, and only after real ground has been covered.
