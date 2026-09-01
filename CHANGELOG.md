@@ -14,6 +14,11 @@ Notable changes. Dates are when the work landed, not when it was released.
 - **The webhook can be encrypted.** Saving from Settings protects it with
   Windows DPAPI; `protect` encrypts one already in `config.toml`. Encrypted
   values start with `enc:` and are useless elsewhere. Plain URLs keep working.
+- **Each channel can be switched off on its own** from the tray. Discord only
+  appears as an option when a webhook is configured, and a deliberately silent
+  channel is never mistaken for a broken one.
+- **File logging is in the settings window**, and turning it on or off takes
+  effect immediately rather than at the next start.
 - **The tray icon carries the state** in its colour, from the same palette the
   Discord embeds use, and greys out when muted. The menu shows state, distance,
   pace or stall, and where alerts are going.

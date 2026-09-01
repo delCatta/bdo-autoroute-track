@@ -120,7 +120,19 @@ class Tray:
                 pystray.MenuItem(lambda _item: self._facts.delivery, None, enabled=False),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem(
-                    "Mute notifications",
+                    "Discord alerts",
+                    self._toggle("discord"),
+                    checked=lambda _item: not self._monitor.outbox.silenced("discord"),
+                    visible=lambda _item: self._monitor.outbox.has("discord"),
+                ),
+                pystray.MenuItem(
+                    "Windows notifications",
+                    self._toggle("desktop"),
+                    checked=lambda _item: not self._monitor.outbox.silenced("desktop"),
+                    visible=lambda _item: self._monitor.outbox.has("desktop"),
+                ),
+                pystray.MenuItem(
+                    "Mute everything",
                     self._toggle_mute,
                     checked=lambda _item: self._monitor.outbox.muted,
                 ),
@@ -171,6 +183,23 @@ class Tray:
         state = State.STARTING if self._monitor.paused else self._facts.state
         muted = self._monitor.outbox.muted
         return self._icons.get((state, muted)) or for_state(state, muted=muted)
+
+    def _toggle(self, channel: str):
+        """A menu action that silences or resumes one channel.
+
+        Silencing one is not the same as a failure: the Outbox skips it without
+        counting a missed delivery, so a deliberately quiet Discord never gets
+        reported as broken.
+        """
+
+        def switch(_icon=None, _item=None) -> None:
+            outbox = self._monitor.outbox
+            quiet = not outbox.silenced(channel)
+            outbox.silence(channel, quiet)
+            log.info("%s alerts %s.", channel, "off" if quiet else "on")
+            self._refresh()
+
+        return switch
 
     def _toggle_mute(self, _icon=None, _item=None) -> None:
         """Stop delivering alerts, while carrying on watching.

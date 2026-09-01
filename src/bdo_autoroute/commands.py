@@ -279,7 +279,10 @@ def protect(_settings: Settings | None, _args) -> int:
 
 def reloader() -> tuple[Settings, Outbox]:
     """Fresh settings and a fresh outbox, for a monitor that spots a change."""
+    from .cli import file_logging
+
     settings = Settings.load()
+    file_logging(settings)
     return settings, build_outbox(settings)
 
 

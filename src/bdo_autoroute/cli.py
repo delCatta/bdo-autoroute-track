@@ -90,13 +90,27 @@ def start_logging(verbose: bool) -> None:
     root.addHandler(console)
 
 
-def also_log_to_file(settings: Settings) -> None:
-    """Add the rotating file log. Off unless asked for.
+def file_logging(settings: Settings, *, forced: bool = False) -> None:
+    """Match file logging to the settings, adding or removing the handler.
 
     Intermittent misreads are the hard ones, and they are only diagnosable
     against a record: the file keeps full dates where the console keeps clock
     times, and every poll lands in it whether or not it raised an alert.
     """
+    root = logging.getLogger()
+    existing = [h for h in root.handlers if isinstance(h, RotatingFileHandler)]
+    wanted = settings.log_to_file or forced
+
+    if not wanted:
+        for handler in existing:
+            root.removeHandler(handler)
+            handler.close()
+        if existing:
+            log.info("Stopped writing %s", LOG_FILE.name)
+        return
+    if existing:
+        return
+
     try:
         LOGS.mkdir(parents=True, exist_ok=True)
         handler = RotatingFileHandler(
@@ -122,8 +136,7 @@ def main(argv: list[str] | None = None) -> int:
             return COMMANDS[args.command](None, args)
 
         settings = Settings.load()
-        if settings.log_to_file or getattr(args, "log", False):
-            also_log_to_file(settings)
+        file_logging(settings, forced=getattr(args, "log", False))
         return COMMANDS[args.command](settings, args)
     except (SettingsError, CaptureError, MarkerError, OcrError) as exc:
         log.error("%s", exc)

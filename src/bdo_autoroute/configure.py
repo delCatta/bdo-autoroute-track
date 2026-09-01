@@ -69,6 +69,7 @@ class SettingsWindow:
         self._poll = tk.StringVar(value=str(current.poll_interval_seconds))
         self._arrival = tk.StringVar(value=str(int(current.arrival_threshold_m)))
         self._stuck = tk.StringVar(value=str(int(current.stuck_after_seconds)))
+        self._logging = tk.BooleanVar(value=current.log_to_file)
 
         self._build()
 
@@ -164,6 +165,18 @@ class SettingsWindow:
             ttk.Label(frame, text=hint, foreground="#666").grid(row=row, column=2, sticky="w")
             row += 1
 
+        ttk.Separator(frame, orient="horizontal").grid(
+            row=row, column=0, columnspan=3, sticky="we", pady=12
+        )
+        row += 1
+        ttk.Checkbutton(
+            frame, text="Write a log file", variable=self._logging
+        ).grid(row=row, column=0, columnspan=2, sticky="w")
+        ttk.Label(
+            frame, text="logs/autoroute.log - turn on to chase a misread", foreground="#666"
+        ).grid(row=row, column=2, sticky="w")
+        row += 1
+
         buttons = ttk.Frame(frame)
         buttons.grid(row=row, column=0, columnspan=3, sticky="e", pady=(16, 0))
         ttk.Button(buttons, text="Open config file", command=self._open_file).pack(
@@ -247,6 +260,7 @@ class SettingsWindow:
         self._config.set("capture", "poll_interval_seconds", int(self._poll.get()))
         self._config.set("detect", "arrival_threshold_m", float(self._arrival.get()))
         self._config.set("detect", "stuck_after_seconds", int(self._stuck.get()))
+        self._config.set("logging", "to_file", bool(self._logging.get()))
         self._config.save()
 
         self._saved = True

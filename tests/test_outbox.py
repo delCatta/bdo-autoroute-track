@@ -138,3 +138,75 @@ def test_settings_reject_an_unknown_channel(tmp_path):
     path.write_text('[notify]\nchannels = ["carrier-pigeon"]\n', encoding="utf-8")
     with pytest.raises(SettingsError, match="carrier-pigeon"):
         Settings.load(path)
+
+
+class TestSilencingOneChannel:
+    """Turning off Discord must not turn off the Windows toast, and neither
+    should look like a broken channel.
+    """
+
+    def outbox(self) -> tuple[Outbox, Channel, Channel]:
+        discord, desktop = Channel("discord"), Channel("desktop")
+        return Outbox([discord, desktop]), discord, desktop
+
+    def test_a_silenced_channel_is_skipped(self):
+        box, discord, desktop = self.outbox()
+        box.silence("discord")
+        assert box.deliver(alert())
+        assert discord.received == []
+        assert len(desktop.received) == 1
+
+    def test_the_others_keep_working(self):
+        box, _discord, desktop = self.outbox()
+        box.silence("discord")
+        box.deliver(alert())
+        box.deliver(alert())
+        assert len(desktop.received) == 2
+
+    def test_silencing_can_be_undone(self):
+        box, discord, _desktop = self.outbox()
+        box.silence("discord")
+        box.deliver(alert())
+        box.silence("discord", False)
+        box.deliver(alert())
+        assert len(discord.received) == 1
+
+    def test_silencing_everything_delivers_nothing(self):
+        box, discord, desktop = self.outbox()
+        box.silence("discord")
+        box.silence("desktop")
+        assert not box.deliver(alert())
+        assert discord.received == [] and desktop.received == []
+
+    def test_a_silenced_channel_is_never_called_broken(self, caplog):
+        box, _discord, _desktop = self.outbox()
+        box.silence("discord")
+        box.silence("desktop")
+        for _ in range(FAILURES_BEFORE_COMPLAINT + 2):
+            box.deliver(alert())
+        assert "in a row" not in caplog.text
+        assert "reached nobody" not in caplog.text
+
+    def test_resuming_clears_an_earlier_failure_count(self):
+        failing = Channel("discord", accepts=False)
+        box = Outbox([failing])
+        box.deliver(alert())
+        box.deliver(alert())
+        box.silence("discord")
+        box.silence("discord", False)
+        failing.accepts = True
+        assert box.deliver(alert())
+
+    def test_has_reports_which_channels_exist(self):
+        box, _discord, _desktop = self.outbox()
+        assert box.has("discord") and box.has("desktop")
+        assert not box.has("carrier-pigeon")
+
+    def test_a_channel_that_was_never_built_is_not_offered(self):
+        """Discord only exists when a webhook is configured."""
+        assert not Outbox([Channel("desktop")]).has("discord")
+
+    def test_nothing_starts_silenced(self):
+        box, _discord, _desktop = self.outbox()
+        assert not box.silenced("discord")
+        assert not box.silenced("desktop")

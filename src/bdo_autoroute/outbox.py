@@ -33,11 +33,27 @@ class Outbox:
     def __init__(self, channels: list[Channel]) -> None:
         self._channels = channels
         self._failures: dict[str, int] = {}
+        self._silenced: set[str] = set()
         self.muted = False
 
     @property
     def names(self) -> list[str]:
         return [c.name for c in self._channels]
+
+    def has(self, name: str) -> bool:
+        """Whether a channel exists at all - Discord only does with a webhook."""
+        return name in self.names
+
+    def silenced(self, name: str) -> bool:
+        return name in self._silenced
+
+    def silence(self, name: str, quiet: bool = True) -> None:
+        """Stop or resume one channel, leaving the rest alone."""
+        if quiet:
+            self._silenced.add(name)
+        else:
+            self._silenced.discard(name)
+            self._failures[name] = 0
 
     @property
     def empty(self) -> bool:
@@ -53,12 +69,13 @@ class Outbox:
             log.info("Muted, so %r was not sent.", alert.headline)
             return False
 
+        speaking = [c for c in self._channels if not self.silenced(c.name)]
         delivered = False
-        for channel in self._channels:
+        for channel in speaking:
             if self._deliver_one(channel, alert):
                 delivered = True
 
-        if self._channels and not delivered:
+        if speaking and not delivered:
             log.error("Alert %r reached nobody: every channel failed.", alert.headline)
         return delivered
 
