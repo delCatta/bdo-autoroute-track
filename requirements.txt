@@ -1,0 +1,16 @@
+# Screen capture + imaging
+mss>=9.0.1
+Pillow>=10.2.0
+numpy>=1.26.0
+
+# Windows window geometry (find the BDO client rect)
+pywin32>=306; sys_platform == "win32"
+
+# Discord webhook delivery
+requests>=2.31.0
+
+# OCR backend. rapidocr needs no external binary install on Windows.
+# If you would rather use Tesseract, install pytesseract + the Tesseract exe
+# and set ocr.backend = "tesseract" in config.toml.
+rapidocr-onnxruntime>=1.3.24
+windows-capture>=2.0.1; sys_platform == "win32"

@@ -1,0 +1,129 @@
+# BDO Barter Boat Monitor - configuration
+# Copy this file to config.toml and edit. config.toml is gitignored.
+
+[window]
+# Substrings matched (case-insensitive) against visible window titles to find
+# the game client. First match wins.
+title_matches = ["Black Desert"]
+# BDO must run in Borderless Windowed or Windowed mode. Fullscreen Exclusive
+# makes most screen-capture APIs return black frames.
+
+[capture]
+# "window" captures the game window itself through Windows Graphics Capture
+# (what OBS calls Window Capture). Overlapping windows never appear in the
+# frame, so you can use the PC while the monitor runs.
+# "screen" grabs the desktop rectangle the window sits on: simpler, but
+# anything covering the game lands in the frame and corrupts the reading.
+# If window capture is unavailable it falls back to screen automatically.
+method = "window"
+
+# How often to read the remaining-distance number, in seconds.
+# Faster than the 5 min heartbeat so a stuck boat is caught early.
+poll_interval_seconds = 30
+
+[detect]
+# A reading at or below this is treated as arrival. The number does not always
+# count down to zero, so do not set this near 0.
+arrival_threshold_m = 70.0
+
+# Distance must fall by more than this between polls to count as real movement.
+# Absorbs OCR jitter and the boat rocking on the spot.
+movement_epsilon_m = 15.0
+
+# If the distance has not dropped by movement_epsilon_m for this long, the
+# boat is considered stuck. 180s = 6 polls at the default interval.
+stuck_after_seconds = 180
+
+# Once stuck, don't re-alert more often than this.
+stuck_realert_minutes = 10
+
+# If the readout disappears (OCR finds nothing) for this many consecutive
+# polls, decide what happened:
+#   - last distance was under near_arrival_m  -> ARRIVED (route UI cleared)
+#   - last distance was above it              -> SIGNAL_LOST (client crashed,
+#                                                disconnected, or UI hidden)
+missing_confirm_polls = 4
+near_arrival_m = 400.0
+
+# How many consecutive readings at or below arrival_threshold_m are needed
+# before declaring arrival. A single OCR misread once turned 1169 into 9, which
+# would have been a false "you have arrived". 2 costs one extra poll of latency.
+# The red near-arrival indicator bypasses this when the game itself agrees.
+arrival_confirm_polls = 2
+
+[notify]
+# Create one under Discord: Channel > Edit Channel > Integrations > Webhooks.
+discord_webhook_url = ""
+
+# Attach a full-window screenshot to every alert so you can see what happened.
+attach_screenshot = true
+
+# Routine "still sailing" update with a screenshot, in minutes. 0 disables it
+# and you will only be pinged on ARRIVED / STUCK / SIGNAL_LOST.
+heartbeat_minutes = 5
+
+# Prefix alerts with a Discord mention so your phone actually buzzes.
+# Use "<@YOUR_USER_ID>" for a DM-style ping, or "@here". Empty = no ping.
+mention = ""
+
+# Which events are worth a ping. Heartbeats are never pinged.
+ping_on = ["ARRIVED", "STUCK", "SIGNAL_LOST"]
+
+[marker]
+# The route marker is anchored to a world position, so it slides around the
+# screen as the camera moves. Each poll the icon is template-matched across the
+# whole frame and the digits are read from a box beside wherever it was found.
+
+# Minimum template-match confidence (0-1) to accept a marker sighting.
+# Measured on a real 3440x1440 frame: the marker scores 1.00, while ordinary
+# scenery tops out around 0.72. Anything at or below ~0.75 will mistake deck
+# texture for the marker and report a made-up distance. `calibrate` measures
+# this separation for your setup and tells you if this value is too low.
+match_threshold = 0.85
+
+# The digits box is widened leftward by this multiple of the width you boxed
+# during calibration, so calibrating on "600" still captures "12345".
+left_slack = 2.0
+
+[ocr]
+# "rapidocr" needs no external install. "tesseract" needs the Tesseract binary.
+backend = "rapidocr"
+
+# The crop is upscaled by this factor before OCR. Game fonts are small; more
+# pixels helps a lot. 4 is a good default.
+upscale = 4
+
+# Digits are light on a dark background. Pixels brighter than this (0-255)
+# are kept as text, everything else is dropped.
+#
+# Measured on live crops: 150 clipped the thin strokes of leading digits, so
+# OCR read "740" as "/40" and the 7 was dropped - a 700m error. Comparing the
+# same 10 crops: threshold 120 gave 0 anomalies and 0 misses, 150 gave 3 and 2.
+brightness_threshold = 120
+
+# Sanity bounds. Readings outside this range are discarded as misreads.
+min_valid_m = 0.0
+max_valid_m = 20000.0
+
+[debug]
+# Save every OCR crop to debug/ so you can see exactly what the reader sees.
+# Turn this on for the first run, then off.
+save_crops = false
+
+[storage]
+# Working files under captures/ and debug/ are deleted after this many days,
+# so a monitor left running for weeks does not fill the disk. 0 disables it.
+retain_days = 7
+
+# Keep a small, permanent, labelled set under samples/ for training later.
+# These are NEVER pruned. Sampling is biased towards failures, because a
+# thousand clean reads of "600" teach a model nothing while one misread does.
+samples_enabled = true
+
+# Per-category ceiling. Oldest are evicted first once a category is full.
+# Categories: unparsed, no_marker, low_conf, red, ok
+samples_max_per_category = 200
+
+# Ordinary successful reads are throttled to one per this many minutes.
+# Anomalies ignore this and are always kept.
+sample_every_minutes = 30
