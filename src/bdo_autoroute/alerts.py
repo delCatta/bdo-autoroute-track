@@ -62,7 +62,7 @@ class Alert:
     def for_event(
         cls, event: Event, *, urgent_states: list[str], details: dict[str, str] | None = None
     ) -> "Alert":
-        fields = {"Was": event.previous.value}
+        fields: dict[str, str] = {}
         if event.eta_seconds:
             fields["ETA"] = duration(event.eta_seconds)
         fields.update(details or {})

@@ -27,6 +27,12 @@ Notable changes. Dates are when the work landed, not when it was released.
 - Editing `config.toml` keeps every comment: values are replaced line by line
   rather than round-tripped through a TOML writer.
 
+### Changed
+
+- **Discord alerts no longer carry a "Was" field.** The headline already says
+  what state it is in; the state it came from was noise on a phone screen. ETA
+  stays.
+
 ## 0.1.0 — 2026-09-01
 
 First release. Every state has now been observed against the live game.

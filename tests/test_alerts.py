@@ -50,9 +50,10 @@ class TestForEvent:
             event(State.TRAVELLING, previous=State.STARTING), urgent_states=URGENT
         ).urgent
 
-    def test_for_event_records_the_state_it_came_from(self):
+    def test_for_event_leaves_out_the_state_it_came_from(self):
+        """The headline already says where it is. Where it was is noise."""
         alert = Alert.for_event(event(), urgent_states=URGENT)
-        assert alert.details["Was"] == "TRAVELLING"
+        assert "Was" not in alert.details
 
     def test_for_event_includes_an_eta_when_there_is_one(self):
         alert = Alert.for_event(event(eta_seconds=90), urgent_states=URGENT)
