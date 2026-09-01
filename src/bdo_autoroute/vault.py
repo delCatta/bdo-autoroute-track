@@ -24,7 +24,7 @@ DESCRIPTION = "bdo-autoroute-track webhook"
 # The token is the last path segment of a webhook URL. Matched on the path
 # rather than the whole URL because a connection error reports the path alone,
 # with the host in a separate part of the message.
-WEBHOOK_TOKEN = re.compile(r"(/api/webhooks/\d+/)[\w.-]+")
+WEBHOOK_TOKEN = re.compile(r"/api/webhooks/\d+(/[\w.-]+)?")
 
 
 def available() -> bool:
@@ -86,7 +86,7 @@ def scrubbed(text: str, *secrets: str) -> str:
     for secret in secrets:
         if secret:
             text = text.replace(secret, masked(secret))
-    return WEBHOOK_TOKEN.sub(r"\1(token)", text)
+    return WEBHOOK_TOKEN.sub("/api/webhooks/(redacted)", text)
 
 
 def masked(secret: str) -> str:

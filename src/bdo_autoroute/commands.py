@@ -37,6 +37,21 @@ def frame_of(window: Window, method: str) -> Image.Image:
         return capture.frame(window)
 
 
+def scrub(settings: Settings, _args) -> int:
+    """Build a report that is safe to attach to a public issue."""
+    from .bundle import Bundle
+
+    target = Bundle(ROOT, settings).write()
+    size_kb = target.stat().st_size / 1024
+    log.info("Report written to %s (%.0f KB)", target, size_kb)
+    log.info("")
+    log.info("It contains the log with every webhook token removed, the digit")
+    log.info("crops, and your calibration. It does not contain config.toml,")
+    log.info("whole window frames, or any window titles.")
+    log.info("Open it and look before attaching it to an issue.")
+    return 0
+
+
 def windows(settings: Settings, _args) -> int:
     """List windows with their processes, so a wrong match is easy to spot."""
     everything = Window.all()

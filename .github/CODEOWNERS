@@ -1,0 +1,10 @@
+# Everything is reviewed by the maintainer. GitHub requests the review
+# automatically, so nothing waits on somebody remembering to ask.
+*       @delCatta
+
+# The parts where a mistake is expensive rather than merely wrong.
+/src/bdo_autoroute/vault.py     @delCatta
+/src/bdo_autoroute/bundle.py    @delCatta
+/src/bdo_autoroute/discord.py   @delCatta
+/SECURITY.md                    @delCatta
+/.github/                       @delCatta

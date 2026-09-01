@@ -83,7 +83,8 @@ restarting.
 
 Other commands: `run.cmd` (same monitor, in a console), `run.cmd --log` (record
 this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,
-`settings.cmd`, `install-shortcut.cmd`.
+`scrub.cmd` (a report safe to attach to an issue), `settings.cmd`,
+`install-shortcut.cmd`.
 
 ## Before you point it at a shared server
 

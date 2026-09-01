@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/delCatta/bdo-autoroute-track/security/advisories/new
+    about: Report it privately instead. A webhook URL is a bearer credential, so please do not put one in a public issue.
+  - name: How it works
+    url: https://github.com/delCatta/bdo-autoroute-track/blob/main/docs/how-it-works.md
+    about: The pipeline, every OCR misread and its fix, calibration and tuning.
+  - name: Non-English client
+    url: https://github.com/delCatta/bdo-autoroute-track/issues/new
+    about: Open a blank issue with a screenshot of the marker and your client language. That is enough to start.

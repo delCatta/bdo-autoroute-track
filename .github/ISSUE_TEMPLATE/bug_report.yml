@@ -1,0 +1,80 @@
+name: Something behaves oddly
+description: An alert that says something untrue, a state stuck in the wrong place, a notification that never arrives
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The three worst bugs in this project were found by someone looking at
+        real output and saying "that seems off", never by the test suite. If
+        something looks wrong, it is worth reporting even if you are not sure.
+
+        For a wrong distance number, use the **Wrong number read** template
+        instead. For a resolution that does or does not work, use **How it went
+        at your resolution**.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      placeholder: |
+        It said "Arrived" while the boat was still moving.
+        It never told me anything even though the route was clearly stuck.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The top line of `report.txt` in the zip below, or the release you downloaded.
+      placeholder: "0.4.4"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channels
+    attributes:
+      label: Where were your alerts going?
+      multiple: true
+      options:
+        - Discord
+        - Windows notification
+        - Neither, I was watching the console
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: report
+    attributes:
+      label: The report
+      description: |
+        Run `.\scrub.cmd`. It writes one zip into `reports\` that is safe to
+        attach: the log with every webhook token and window title removed, the
+        digit crops, and your calibration. No `config.toml`, no whole window
+        frames, no window titles.
+
+        **Please do not attach `logs\autoroute.log` or `samples\` by hand.**
+        The log carried your webhook token before version 0.3.1, and
+        `samples\no_marker\` holds whole window frames with guild chat, your
+        character name and the marketplace in them.
+      options:
+        - label: I ran `.\scrub.cmd` and attached the zip from `reports\`
+          required: false
+        - label: I opened the zip and I am happy for it to be public
+          required: true
+
+  - type: textarea
+    id: anything
+    attributes:
+      label: Anything else
+      description: Screenshots are welcome. Crop out anything you would rather not publish.
+    validations:
+      required: false

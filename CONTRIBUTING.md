@@ -9,6 +9,22 @@ output and saying "that seems off", never by the test suite.
 
 You do not need to write any code for the first three.
 
+### 📦 First, never attach files by hand
+
+Run `.\scrub.cmd`. It writes one zip into `reports\` holding the log with every
+webhook token and window title removed, the digit-crop samples, and your
+calibration. It leaves out `config.toml`, whole window frames, and every window
+title.
+
+**This matters.** A Discord webhook URL is a bearer credential, and before
+version 0.3.1 a failed delivery wrote yours straight into `logs/autoroute.log`.
+`samples/no_marker/` holds whole window frames, so guild chat, whispers, your
+character name and the marketplace. Running with `-v`, which the instructions
+below recommend for chasing a misread, puts every open window's title in the log.
+
+Open the zip and look before you attach it. A public issue cannot be
+un-published.
+
 ### 🖥️ Tell us your resolution
 
 Template matching is **known broken** when the resolution changes after
@@ -28,8 +44,7 @@ If you hit it:
 
 1. set `logging.to_file = true` in `config.toml`, or run `.\run.cmd --log`
 2. play normally until you see a wrong number
-3. open an issue with `logs/autoroute.log` and the contents of
-   `samples/unparsed/` and `samples/low_confidence/`
+3. run `.\scrub.cmd` and attach the zip it writes into `reports\`
 
 Those samples are PNG crops with a JSON sidecar recording exactly what OCR
 returned. That is the evidence needed to fix it properly. An earlier attempt
@@ -43,8 +58,8 @@ client language is enough to start.
 ### ⚓ Anything that behaves oddly
 
 Especially an alert that says something untrue, a state that seems stuck in the
-wrong place, or a notification that never arrives. Include
-`logs/autoroute.log` if you have it.
+wrong place, or a notification that never arrives. Attach the zip from
+`.\scrub.cmd` if you have one.
 
 ## Running it from source
 
@@ -76,6 +91,12 @@ wheel for. `setup.cmd` checks this for you.
 
 Not sure whether an idea fits? Open an issue first and ask. That is cheaper than
 writing something that gets turned down.
+
+## Security
+
+Do not open a public issue for a security problem. [SECURITY.md](SECURITY.md)
+has the private route, and a note on what this tool handles that is worth
+knowing before you go looking.
 
 ## One thing that will be turned down
 

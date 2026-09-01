@@ -1,0 +1,77 @@
+name: How it went at your resolution
+description: Tell us whether calibration worked on your setup, whatever the answer
+title: "Resolution: "
+labels: ["resolution-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **You do not need to hit a bug to file this.** Template matching is only
+        proven at 3440x1440. It is known to break when the resolution changes
+        after calibration, where the marker scored 0.00 at 0.537 scale.
+        Recalibrating at your own resolution should work, but nobody has
+        confirmed that anywhere else.
+
+        "Works fine at 1920x1080" is a genuinely useful report. So is "it never
+        found the marker".
+
+  - type: input
+    id: resolution
+    attributes:
+      label: Your resolution
+      placeholder: "1920x1080"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: How did it go?
+      options:
+        - Works, it finds and reads the marker
+        - Works, but only after I recalibrated
+        - Finds the marker but misreads the number
+        - Never finds the marker at all
+    validations:
+      required: true
+
+  - type: input
+    id: confidence
+    attributes:
+      label: Match confidence
+      description: Run `.\shot.cmd` after calibrating. It prints a number between 0 and 1.
+      placeholder: "0.98"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: display
+    attributes:
+      label: Display mode
+      options:
+        - Borderless Windowed
+        - Windowed
+        - Fullscreen
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: scaling
+    attributes:
+      label: Windows display scaling
+      description: Settings > System > Display > Scale. Worth knowing, since it changes the pixel size of the marker.
+      placeholder: "100%"
+    validations:
+      required: false
+
+  - type: textarea
+    id: anything
+    attributes:
+      label: Anything else
+      description: |
+        If it went badly, `.\scrub.cmd` writes a zip in `reports\` that is safe
+        to attach. It leaves out `config.toml`, whole window frames and window
+        titles.
+    validations:
+      required: false

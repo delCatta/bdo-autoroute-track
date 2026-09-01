@@ -22,3 +22,6 @@ debug/
 # Curated training samples - kept forever, but not source code
 samples/
 icon_template.png
+
+# Diagnostic bundles built by `scrub`. Local, and regenerated on demand.
+reports/

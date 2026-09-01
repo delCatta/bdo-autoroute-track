@@ -1,0 +1,61 @@
+name: Wrong number read
+description: The distance shown does not match what is on screen
+title: "Misread: "
+labels: ["ocr-misread"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This is the most useful report you can send.** The known misread is a
+        dropped leading digit, where `740` reads as `/40` and `1480` as `480`.
+        The state machine refuses to act on it, so it cannot cause a false
+        arrival, but the readings are still wrong.
+
+        Fixing it properly needs real crops with real OCR output beside them,
+        which is exactly what the report below contains.
+
+  - type: input
+    id: seen
+    attributes:
+      label: What did the game show, and what did the tool say?
+      placeholder: "Game showed 1480, the log said 480"
+    validations:
+      required: true
+
+  - type: input
+    id: resolution
+    attributes:
+      label: Your resolution
+      placeholder: "3440x1440"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: report
+    attributes:
+      label: The report
+      description: |
+        Run `.\scrub.cmd`. It writes one zip into `reports\` holding the log
+        with every webhook token and window title removed, the digit crops, and
+        your calibration. It leaves out `config.toml`, whole window frames and
+        window titles.
+
+        **Please do not attach `logs\autoroute.log` or `samples\` by hand.**
+        The log carried your webhook token before version 0.3.1, and
+        `samples\no_marker\` holds whole window frames with guild chat, your
+        character name and the marketplace in them.
+      options:
+        - label: I ran `.\scrub.cmd` and attached the zip from `reports\`
+          required: false
+        - label: I opened the zip and I am happy for it to be public
+          required: true
+
+  - type: textarea
+    id: anything
+    attributes:
+      label: Anything else
+      description: |
+        Was it repeatable? Did it happen with red text, near the destination, or
+        at a particular distance? Drag the zip into this box.
+    validations:
+      required: false

@@ -28,6 +28,7 @@ COMMANDS = {
     "shot": commands.shot,
     "test-notify": commands.test_notify,
     "windows": commands.windows,
+    "scrub": commands.scrub,
     "settings": commands.configure,
     "protect": commands.protect,
 }
@@ -74,6 +75,9 @@ def parser() -> argparse.ArgumentParser:
     subcommands.add_parser("shot", parents=[common], help="one look, for troubleshooting")
     subcommands.add_parser("test-notify", parents=[common], help="send a test alert")
     subcommands.add_parser("windows", parents=[common], help="list windows and which match")
+    subcommands.add_parser(
+        "scrub", parents=[common], help="build a report safe to attach to an issue"
+    )
     subcommands.add_parser("settings", parents=[common], help="open the settings window")
     subcommands.add_parser(
         "protect", parents=[common], help="encrypt the webhook already in config.toml"
