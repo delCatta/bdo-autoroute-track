@@ -125,6 +125,17 @@ max_valid_m = 20000.0
 # Turn this on for the first run, then off.
 save_crops = false
 
+[logging]
+# Write every poll to logs/autoroute.log as well as the console. Off by
+# default. Turn it on when chasing an intermittent misread: after the fact the
+# log is the only record of what was actually read. `--log` turns it on for a
+# single run without editing this file.
+to_file = false
+
+# Rotate at this size, keeping this many older files.
+max_mb = 2
+keep_files = 5
+
 [storage]
 # Working files under captures/ and debug/ are deleted after this many days,
 # so a monitor left running for weeks does not fill the disk. 0 disables it.

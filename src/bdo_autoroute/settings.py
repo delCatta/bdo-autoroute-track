@@ -132,11 +132,19 @@ class Settings:
     match_threshold: float = 0.85
     left_slack: float = 2.0
 
+    log_to_file: bool = False
+    log_max_mb: int = 2
+    log_keep_files: int = 5
+
     retain_days: int = 7
     samples_enabled: bool = True
     samples_max_per_category: int = 200
     sample_every_minutes: int = 30
     save_crops: bool = False
+
+    @property
+    def log_max_bytes(self) -> int:
+        return max(1, self.log_max_mb) * 1_000_000
 
     @property
     def stuck_realert_seconds(self) -> float:
@@ -174,6 +182,7 @@ class Settings:
         marker = raw.get("marker", {})
         ocr = raw.get("ocr", {})
         storage = raw.get("storage", {})
+        logs = raw.get("logging", {})
         debug = raw.get("debug", {})
         fallback = cls()
 
@@ -221,6 +230,9 @@ class Settings:
             ),
             floor_m=ocr.get("min_valid_m", fallback.floor_m),
             ceiling_m=ocr.get("max_valid_m", fallback.ceiling_m),
+            log_to_file=logs.get("to_file", fallback.log_to_file),
+            log_max_mb=logs.get("max_mb", fallback.log_max_mb),
+            log_keep_files=logs.get("keep_files", fallback.log_keep_files),
             retain_days=storage.get("retain_days", fallback.retain_days),
             samples_enabled=storage.get("samples_enabled", fallback.samples_enabled),
             samples_max_per_category=storage.get(
@@ -241,6 +253,10 @@ class Settings:
             raise SettingsError("marker.match_threshold must be between 0 and 1.")
         if self.retain_days < 0:
             raise SettingsError("storage.retain_days cannot be negative.")
+        if self.log_max_mb < 1:
+            raise SettingsError("logging.max_mb must be at least 1.")
+        if self.log_keep_files < 0:
+            raise SettingsError("logging.keep_files cannot be negative.")
         if self.capture_method not in CAPTURE_METHODS:
             raise SettingsError(
                 f"Unknown capture.method {self.capture_method!r}; use "

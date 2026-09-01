@@ -166,9 +166,16 @@ intermittent misses. **Re-run calibrate if you change `capture.method`.**
 
 ## Housekeeping
 
-`logs/autoroute.log` records every poll with full timestamps, rotating at 2MB
-across 5 files. Intermittent misreads are the hard ones to chase, and they are
-only diagnosable against a record.
+**Logging to a file is off by default.** Turn it on when something looks wrong:
+
+```powershell
+.un.cmd --log        # just this run
+```
+
+or set `logging.to_file = true` in `config.toml` to keep it on. It writes
+`logs/autoroute.log` with full timestamps, every poll whether or not it raised
+an alert, rotating at `max_mb` across `keep_files`. Intermittent misreads are
+the hard ones to chase and they are only diagnosable against a record.
 
 `captures/` and `debug/` are working files, deleted after `storage.retain_days`
 (7) so a monitor left running for weeks will not fill the disk. Pruning happens
@@ -312,6 +319,7 @@ All in `config.toml`, all commented:
 | `detect.approaching_m` | `500` | One-off early warning when the destination comes into range. |
 | `detect.stalling_after_seconds` | `60` | One-off early warning when progress falters, before `stuck_after_seconds`. |
 | `detect.stuck_realert_minutes` | `10` | How often a still-stuck boat nags you. |
+| `logging.to_file` | `false` | Write logs/autoroute.log as well as the console. `--log` forces it on for one run. |
 | `storage.retain_days` | `7` | Age at which captures/ and debug/ files are deleted. 0 disables. |
 | `storage.sample_every_minutes` | `30` | Throttle for routine `ok` samples; anomalies ignore it. |
 
