@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import signal
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -74,7 +75,11 @@ class Monitor:
 
         self._marker: Marker | None = None
         self._marker_size: tuple[int, int] | None = None
-        self._stopping = False
+        # An Event, not a bool. The poll loop waits on it instead of sleeping,
+        # so a stop takes effect at once rather than whenever the current
+        # 30-second sleep happens to end. Quitting from the tray used to freeze
+        # the menu for ten seconds and then abandon the thread mid-sleep.
+        self._stop = threading.Event()
         self._warned_blank = False
         self._observers: list = []
         self.paused = False
@@ -113,11 +118,11 @@ class Monitor:
         )
 
         with capture_for(self._settings.capture_method) as capture:
-            while not self._stopping:
+            while not self._stop.is_set():
                 self._tick(capture)
-                if once or self._stopping:
+                if once or self._stop.is_set():
                     break
-                time.sleep(self._settings.poll_interval_seconds)
+                self._stop.wait(self._settings.poll_interval_seconds)
 
         log.info("Stopped.")
         return 0
@@ -195,9 +200,13 @@ class Monitor:
         """Call `observer(status)` after every poll. Used by the tray."""
         self._observers.append(observer)
 
+    @property
+    def stopping(self) -> bool:
+        return self._stop.is_set()
+
     def halt(self) -> None:
-        """Finish the current poll and stop."""
-        self._stopping = True
+        """Finish the current poll and stop. Returns at once."""
+        self._stop.set()
 
     def _on_interrupt(self, _signum: int, _frame: FrameType | None) -> None:
         log.info("Stop requested; finishing this poll.")

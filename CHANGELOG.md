@@ -2,6 +2,19 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.4 (2026-09-01)
+
+### Fixed
+
+- **Quit on the tray menu appeared to do nothing.** The poll loop slept between
+  polls with `time.sleep`, which cannot be interrupted, so stopping only set a
+  flag that nothing would read until the sleep ended. The tray then waited ten
+  seconds for the worker from the same thread that draws the menu, and stopped
+  the icon only after giving up. Clicking Quit closed the menu, did nothing
+  visible for ten seconds, then removed the icon and abandoned the worker
+  mid-sleep. The loop now waits on an event, so a stop takes effect at once, and
+  the icon goes away the moment it is clicked.
+
 ## 0.4.3 (2026-09-01)
 
 ### Fixed

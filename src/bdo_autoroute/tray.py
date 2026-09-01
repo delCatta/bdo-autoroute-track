@@ -303,11 +303,19 @@ class Tray:
         webbrowser.open(self._logs.as_uri())
 
     def _quit(self, _icon=None, _item=None) -> None:
+        """Take the icon away first, then wind the monitor down.
+
+        This runs on pystray's own thread, so anything slow here freezes the
+        menu. Stopping the icon first means the tray disappears the moment it
+        is clicked, whatever the poll loop is doing.
+        """
         log.info("Quitting from the tray.")
         self._monitor.halt()
-        if self._worker is not None:
-            self._worker.join(timeout=10)
         self._icon.stop()
+        if self._worker is not None:
+            self._worker.join(timeout=5)
+            if self._worker.is_alive():
+                log.warning("The monitor did not stop in time; exiting anyway.")
 
     def _image(self, _icon: Path | None) -> Image.Image:
         return self._icons[(State.STARTING, False)]
