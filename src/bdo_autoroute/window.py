@@ -127,7 +127,7 @@ class Window:
     def _pick(cls, titles: list[str], processes: list[str]) -> tuple[int, str, bool]:
         """The game window, preferring the process over the title.
 
-        Titles are treacherous: a Discord server called "Black Desert - Sailing"
+        Titles are treacherous. A Discord server called "Black Desert - Sailing"
         and a browser tab about the game both match, and EnumWindows returns
         z-order, so whichever is in front wins. Alt-tabbing to read an alert was
         enough to start screenshotting Discord instead of the game.

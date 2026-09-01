@@ -1,10 +1,10 @@
-# BDO Boat Monitor - configuration
+# BDO Autoroute Track configuration
 # Copy this file to config.toml and edit. config.toml is gitignored.
 
 [window]
 # The game is identified by its process first. Titles are treacherous. A Discord
 # server called "Black Desert - Sailing", or a browser tab about the game, match
-# just as well - and Windows enumerates windows front-to-back, so alt-tabbing to
+# just as well, and Windows enumerates windows front-to-back, so alt-tabbing to
 # read an alert was enough to start screenshotting Discord instead of the game.
 process_matches = ["BlackDesert64.exe"]
 
@@ -84,7 +84,7 @@ channels = ["discord", "desktop"]
 discord_webhook_url = ""
 
 # How much of the screen an alert may carry.
-#   "full"   the whole game window - the most useful, and the most revealing.
+#   "full"   the whole game window, the most useful and the most revealing.
 #            It includes whispers, guild chat, your character name and the
 #            marketplace. Fine in a private channel; think twice in a shared one.
 #   "marker" just the distance marker and a little context around it.

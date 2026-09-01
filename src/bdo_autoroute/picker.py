@@ -14,13 +14,13 @@ from PIL import Image, ImageTk
 from .marker import Box
 
 DIGITS_PROMPT = (
-    "STEP 1 of 2 - drag a box around the DISTANCE DIGITS only.\n"
+    "STEP 1 of 2. Drag a box around the DISTANCE DIGITS only.\n"
     "Just the number, for example 600 or 3970. Leave the icon out.\n"
     "Enter or double-click to accept  |  R to redraw  |  Esc to cancel"
 )
 
 ICON_PROMPT = (
-    "STEP 2 of 2 - now drag a box around the ICON beside the number.\n"
+    "STEP 2 of 2. Now drag a box around the ICON beside the number.\n"
     "Box it tightly: this picture is used to find the marker as it moves.\n"
     "Enter or double-click to accept  |  R to redraw  |  Esc to cancel"
 )
@@ -37,7 +37,7 @@ class Picker:
         self._rectangle: int | None = None
 
         self._root = tk.Tk()
-        self._root.title("BDO autoroute track - calibration")
+        self._root.title("BDO Autoroute Track calibration")
 
         available_width = self._root.winfo_screenwidth() - 80
         available_height = self._root.winfo_screenheight() - 220

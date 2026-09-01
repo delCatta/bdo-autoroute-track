@@ -34,7 +34,7 @@ def protected(secret: str) -> str:
     """The stored form of a secret: `enc:` plus a DPAPI blob, base64 encoded.
 
     Returns the secret unchanged if it is empty or already protected, or if
-    DPAPI is unavailable - a working plaintext config beats a broken one.
+    DPAPI is unavailable, because a working plaintext config beats a broken one.
     """
     if not secret or secret.startswith(PREFIX):
         return secret

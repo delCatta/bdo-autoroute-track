@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
 
 SCREENSHOT_EXPLAINED = {
-    "full": "Full window - includes chat and your character name",
-    "marker": "Just the marker - no chat, safe for shared servers",
+    "full": "Full window, includes chat and your character name",
+    "marker": "Just the marker, no chat, safe for shared servers",
     "none": "Text only",
 }
 
@@ -157,7 +157,7 @@ class SettingsWindow:
 
         for label, variable, hint in (
             ("Check every (seconds)", self._poll, "30 is a good default"),
-            ("Arrived under (metres)", self._arrival, "70 - it rarely reaches 0"),
+            ("Arrived under (metres)", self._arrival, "70, it rarely reaches 0"),
             ("Stuck after (seconds)", self._stuck, "180 before it calls it stuck"),
         ):
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=2)
@@ -173,7 +173,7 @@ class SettingsWindow:
             frame, text="Write a log file", variable=self._logging
         ).grid(row=row, column=0, columnspan=2, sticky="w")
         ttk.Label(
-            frame, text="logs/autoroute.log - turn on to chase a misread", foreground="#666"
+            frame, text="logs/autoroute.log, turn on to chase a misread", foreground="#666"
         ).grid(row=row, column=2, sticky="w")
         row += 1
 

@@ -30,7 +30,7 @@ if ($Remove) {
 }
 
 if (-not (Test-Path (Join-Path $PSScriptRoot 'run.ps1'))) {
-    Write-Host "run.ps1 is missing - is this the right folder?" -ForegroundColor Red
+    Write-Host "run.ps1 is missing. Is this the right folder?" -ForegroundColor Red
     exit 1
 }
 if (-not (Test-Path (Join-Path $PSScriptRoot '.venv'))) {

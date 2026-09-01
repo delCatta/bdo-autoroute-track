@@ -126,8 +126,8 @@ class Monitor:
     def reloads_from(self, path: Path, loader) -> None:
         """Watch a config file and adopt it whenever it changes on disk.
 
-        Saving from anywhere reaches a running monitor this way - the settings
-        window, an editor, another process - so nothing has to be restarted and
+        Saving from anywhere reaches a running monitor this way (the settings
+        window, an editor, another process), so nothing has to be restarted and
         nothing has to be told to restart.
         """
         self._config = path

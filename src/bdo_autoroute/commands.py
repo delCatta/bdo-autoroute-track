@@ -50,7 +50,7 @@ def windows(settings: Settings, _args) -> int:
     for hwnd, title in by_process or []:
         log.info("  [GAME] hwnd=%-9d %-22s %r", hwnd, process_name(hwnd), title)
     if not by_process:
-        log.warning("  none - the game does not appear to be running")
+        log.warning("  none, so the game does not appear to be running")
 
     log.info("Windows whose title matches %s:", settings.title_matches)
     for hwnd, title in by_title or []:

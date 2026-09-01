@@ -80,7 +80,7 @@ class Status:
     approaching: bool = False
     stalling: bool = False
     # False when this poll produced no usable reading. The distance above is
-    # then the last known one, carried over - which reads exactly like a fresh
+    # then the last known one, carried over, which reads exactly like a fresh
     # measurement unless something says otherwise.
     fresh: bool = True
     # A reading that was refused as impossible and is awaiting confirmation.
@@ -303,7 +303,7 @@ class Voyage:
         """Hold an impossible jump until a second reading agrees with it.
 
         A genuine route change is confirmed by the next poll and costs one poll
-        of latency. A misread is not, and never moves the baseline - which is
+        of latency. A misread is not, and never moves the baseline, which is
         what keeps a flickering 1480/480 from resetting the stall timer forever.
         """
         agreed = (

@@ -2,7 +2,7 @@
 
 An icon that always looks the same wastes the only thing a tray icon is good
 at: saying how things are without being opened. The hull takes the state's
-colour - the same colour the Discord embed uses, so the two never disagree.
+colour, the same one the Discord embed uses, so the two never disagree.
 
 Drawn rather than shipped: no game artwork is involved, and a colour variant
 costs nothing.

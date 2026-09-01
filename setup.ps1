@@ -44,7 +44,7 @@ $major = [int]$parts[0]; $minor = [int]$parts[1]
 if ($major -ne 3 -or $minor -lt 11 -or $minor -gt 12) {
     Write-Host ""
     Write-Host "Python $versionText is not supported." -ForegroundColor Red
-    Write-Host "This needs Python 3.11 or 3.12 - the OCR engine has no wheel for 3.13 yet."
+    Write-Host "This needs Python 3.11 or 3.12. The OCR engine has no wheel for 3.13 yet."
     Write-Host ""
     Write-Host "    winget install -e --id Python.Python.3.12" -ForegroundColor Yellow
     Write-Host ""

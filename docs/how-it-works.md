@@ -69,7 +69,7 @@ these cost a real bug:
 |---|---|---|
 | `11'69 9` | 1169m | Apostrophes are thousands separators; the parser takes the run with the **most digits**, not the right-most |
 | `1400` | **14000** | The digits box preserved a calibration-time gap to the icon. That gap shrinks as the number grows, clipping the last digit, a 10x error. The box now hugs the icon |
-| `/40` | 740m | Threshold 150 clipped thin strokes and dropped the leading `7`. Over the same 10 crops: threshold **120** gave 0 anomalies, 150 gave 3 |
+| `/40` | 740m | Threshold 150 clipped thin strokes and dropped the leading `7`. Over the same 10 crops, threshold **120** gave 0 anomalies and 150 gave 3 |
 | `480` / `1480` / `480` … | 1480m | A dropped leading digit made every flip look like a kilometre of progress, resetting the stall timer so `STUCK` could never fire |
 
 Two structural defences came out of that last one:
@@ -222,9 +222,9 @@ clean reads of "600" teach a model nothing while one misread teaches it plenty.
 | Category | What lands here |
 |---|---|
 | `unparsed` | marker found, no number readable |
-| `no_marker` | nothing matched: negative examples, downscaled |
+| `no_marker` | nothing matched, kept as negative examples, downscaled |
 | `low_confidence` | matched only just above the threshold |
-| `red` | the near-arrival red text: rare, easy to get wrong |
+| `red` | the near-arrival red text, rare and easy to get wrong |
 | `ordinary` | clean reads, throttled to one per `sample_every_minutes` |
 
 Each sample is a PNG plus a JSON sidecar with the raw OCR text, parsed value, red

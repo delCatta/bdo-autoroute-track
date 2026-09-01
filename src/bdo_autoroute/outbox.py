@@ -54,7 +54,7 @@ class Outbox:
         return bool(self._channels) and all(self.silenced(c.name) for c in self._channels)
 
     def has(self, name: str) -> bool:
-        """Whether a channel exists at all - Discord only does with a webhook."""
+        """Whether a channel exists at all, which Discord does only with a webhook."""
         return name in self.names
 
     def silenced(self, name: str) -> bool:
@@ -110,7 +110,7 @@ class Outbox:
         if missed == FAILURES_BEFORE_COMPLAINT:
             log.error(
                 "%s has failed %d deliveries in a row. Alerts are not reaching "
-                "you through it - check the configuration.",
+                "you through it. Check the configuration.",
                 channel.name,
                 missed,
             )

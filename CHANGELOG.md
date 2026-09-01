@@ -9,7 +9,7 @@ Notable changes. Dates are when the work landed, not when it was released.
 - **Settings window.** `setup.cmd` finishes by opening it, and it is on the tray
   menu. Covers where alerts go, the webhook (with a Test button), how much of
   the screen to send, and the main thresholds. Saved changes **apply
-  immediately** - the Voyage is retuned in place rather than rebuilt, so the
+  immediately**. The Voyage is retuned in place rather than rebuilt, so the
   journey and its stall timer survive.
 - **The webhook can be encrypted.** Saving from Settings protects it with
   Windows DPAPI; `protect` encrypts one already in `config.toml`. Encrypted

@@ -112,7 +112,7 @@ It observes and tells you things. It does not play for you. Pearl Abyss's
 enforcement is aimed at macros and botting, programs that automate *input*,
 which is a different category from this.
 
-> **That said: no third-party tool is officially sanctioned, and you use this at
+> **That said, no third-party tool is officially sanctioned, and you use this at
 > your own risk.** Nobody here can promise how Pearl Abyss will treat any given
 > program, and account actions are theirs to take. If that risk is not acceptable
 > to you, do not run it.
