@@ -197,7 +197,7 @@ for most DirectX games. Do not try it again. Windows Graphics Capture works.
 ## 7. Local state - what never gets committed
 
 Four things are per-machine and deliberately gitignored. A fresh clone has none
-of them, which is why `setup.ps1` then `calibrate.ps1` are the required first
+of them, which is why `setup.cmd` then `calibrate.cmd` are the required first
 steps.
 
 | Path | What it is |
@@ -209,11 +209,11 @@ steps.
 
 A calibration that worked in development was `digits_offset [-86, 0, 83, 14]`
 with a 17×16 icon template, at 3440×1440 borderless windowed under **window**
-capture. That is a sanity reference, not a default — re-run `calibrate.ps1` for
+capture. That is a sanity reference, not a default — re-run `calibrate.cmd` for
 any resolution, UI scale, or `capture.method` change.
 
 Reference environment: Python 3.12.10 on Windows 11, installed via winget.
-Windows ships a Store stub that cannot create venvs; `setup.ps1` detects and
+Windows ships a Store stub that cannot create venvs; `setup.cmd` detects and
 rejects it.
 
 ⚠️ Before ever committing, confirm `git status` does not list `config.toml`.
@@ -244,16 +244,16 @@ One Discord webhook URL in public history is a channel anyone can spam.
 ## 9. Running it
 
 ```powershell
-.\setup.ps1        # once
-.\calibrate.ps1    # once, or after any resolution / capture.method change
-.\run.ps1          # the monitor
-.\test-notify.ps1  # prove the webhook works
-.\shot.ps1         # one-off: locate marker, report what it reads
+.\setup.cmd        # once
+.\calibrate.cmd    # once, or after any resolution / capture.method change
+.\run.cmd          # the monitor
+.\test-notify.cmd  # prove the webhook works
+.\shot.cmd         # one-off: locate marker, report what it reads
 .\.venv\Scripts\python.exe -m bdo_autoroute windows   # which window matched
-.\.venv\Scripts\python.exe -m pytest                # 118 tests
+.\.venv\Scripts\python.exe -m pytest                # 144 tests
 ```
 
-A desktop shortcut, **"BDO Boat Monitor"**, runs `run.ps1` in a window that
+A desktop shortcut, **"BDO Autoroute Track"**, runs `run.cmd` in a window that
 stays open (Ctrl+C to stop).
 
 ## 10. Ideas if the work continues

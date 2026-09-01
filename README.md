@@ -25,11 +25,18 @@ game memory, injects anything, or sends input. See
 ### Quick start
 
 ```powershell
-.\setup.ps1        # venv + dependencies
+.\setup.cmd        # venv + dependencies
                    # then put your Discord webhook in config.toml
-.\calibrate.ps1    # box the distance digits, then the icon
-.\run.ps1          # go AFK
+.\calibrate.cmd    # box the distance digits, then the icon
+.\run.cmd          # go AFK
 ```
+
+Use the **`.cmd`** files, not the `.ps1` ones. Windows ships with PowerShell's
+execution policy set to `Restricted`, so `.\setup.ps1` fails with *"running
+scripts is disabled on this system"*. Each `.cmd` is a two-line wrapper that
+runs its `.ps1` with `-ExecutionPolicy Bypass` for that one call — it changes
+nothing about your system. The `.ps1` files work directly if your policy already
+allows them.
 
 Built because nothing else does this. Barter trackers like
 [BDO Life Companion](https://github.com/kurohige/BdoLifeCompanion-Pub) are
@@ -181,7 +188,7 @@ winget install -e --id Python.Python.3.12
 Open a **new** terminal afterwards, then:
 
 ```powershell
-.\setup.ps1
+.\setup.cmd
 ```
 
 That creates `.venv`, installs everything into it, and copies
@@ -212,7 +219,7 @@ Check the game is being found at all:
 Start an auto-route in game so the distance marker is on screen, then:
 
 ```powershell
-.\calibrate.ps1
+.\calibrate.cmd
 ```
 
 You'll be asked for two boxes:
@@ -245,14 +252,14 @@ Re-run it if you change resolution or UI scale.
 
 ## Run
 
-Double-click the **BDO Boat Monitor** shortcut on the Desktop, or:
+Double-click the **BDO Autoroute Track** shortcut on the Desktop, or:
 
 ```powershell
-.\run.ps1
+.\run.cmd
 ```
 
-Recreate the shortcut any time with `.\install-shortcut.ps1`, or remove it with
-`.\install-shortcut.ps1 -Remove`.
+Recreate the shortcut any time with `.\install-shortcut.cmd`, or remove it with
+`.\install-shortcut.cmd -Remove`.
 
 Leave it running while you're AFK. Console shows every poll; Discord gets alerts.
 Ctrl+C stops it.
@@ -266,9 +273,9 @@ Ctrl+C stops it.
 Other commands:
 
 ```powershell
-.\test-notify.ps1   # prove the webhook works before you rely on it
-.\shot.ps1          # locate the marker now and report what it reads
-.\run.ps1 --once    # one poll and exit
+.\test-notify.cmd   # prove the webhook works before you rely on it
+.\shot.cmd          # locate the marker now and report what it reads
+.\run.cmd --once    # one poll and exit
 ```
 
 ## Tuning
@@ -325,7 +332,7 @@ name — that would put users in a genuinely different category of risk.
 Not affiliated with, endorsed by, or connected to Pearl Abyss. "Black Desert
 Online" and its assets belong to them. No game files or artwork are included in
 this repository: `icon_template.png` is generated on your own machine by
-`calibrate.ps1` from your own screen, and is gitignored.
+`calibrate.cmd` from your own screen, and is gitignored.
 
 ## Contributing
 
