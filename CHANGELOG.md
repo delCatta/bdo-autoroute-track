@@ -2,6 +2,19 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.3 (2026-09-01)
+
+### Fixed
+
+- **The heartbeat could go silent for an entire voyage.** Progress is measured
+  against the distance at the last heartbeat, so one that fired near the end of
+  a route left a baseline of a few hundred metres. A new route starting at
+  9200m was then measured against it, giving a negative figure that never
+  cleared the minimum, and the next alert would only arrive if the new route
+  became shorter than the old one had been. Seen live: twelve minutes and 7000m
+  of travel with nothing sent, on a config asking for one alert a minute. A
+  route that starts further away now rebases the baseline.
+
 ## 0.4.2 (2026-09-01)
 
 ### Fixed

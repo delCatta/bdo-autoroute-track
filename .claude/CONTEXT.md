@@ -170,6 +170,16 @@ with no window and nothing in the log, which looks exactly like a dead menu
 entry. The import is inside the `try` now. **Restart the tray after touching
 `src/`**, or you are testing a mixture.
 
+**#15. The heartbeat went silent for a whole voyage.** `_worth_a_heartbeat`
+measures progress as `last_heartbeat_distance - distance`. A heartbeat fired
+near the end of one route set that baseline to ~420m, then a new route began at
+9200m, so the sum went to -8780 and stayed under the 150m threshold. Twelve
+minutes and 7000m of real travel produced no alert at all. It presented as
+"Discord stopped working", and the log showed polling working perfectly with
+nothing sent, because nothing was generated. A negative figure now rebases
+instead of blocking.
+-> `tests/test_heartbeat_rebase.py`
+
 ## 6. Verified against the live game
 
 - `STUCK` at 3m 5s of stall on a route held at 3580m (2026-09-01 10:48:46),

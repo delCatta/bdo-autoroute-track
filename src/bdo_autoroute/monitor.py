@@ -300,6 +300,16 @@ class Monitor:
             if self._last_heartbeat_distance is None
             else self._last_heartbeat_distance - status.distance_m
         )
+        if covered < 0:
+            # Further away than at the last heartbeat, so a new and longer route
+            # started under it. Rebase rather than measure against a number from
+            # a different journey. Without this the heartbeat goes silent for
+            # the whole voyage: a route beginning at 9200m is compared against a
+            # baseline of 420m from the end of the last one, and only speaks
+            # again if the new route happens to get shorter than the old one
+            # did. Seen live on 2026-09-01, silent from 9200m down to 2030m.
+            self._last_heartbeat_distance = status.distance_m
+            return False
         if covered < self._settings.heartbeat_min_progress_m:
             return False
 
