@@ -1,7 +1,7 @@
 # Contributing
 
 Contributions are genuinely wanted, and small ones are welcome. If you play BDO
-and something behaves oddly, **that report is worth more than most code** — the
+and something behaves oddly, **that report is worth more than most code**. The
 three worst bugs in this project were all found by someone looking at real
 output and saying "that seems off", never by the test suite.
 
@@ -20,7 +20,7 @@ and your resolution. Even "works fine at 1920×1080" is useful.
 
 ### 🔤 Help fix the dropped leading digit
 
-OCR sometimes loses the first digit — `740` reads as `/40`, `1480` as `480`. The
+OCR sometimes loses the first digit: `740` reads as `/40`, `1480` as `480`. The
 state machine refuses to act on it, so it cannot cause a false arrival, but the
 readings are still occasionally wrong.
 
@@ -32,7 +32,7 @@ If you hit it:
    `samples/unparsed/` and `samples/low_confidence/`
 
 Those samples are PNG crops with a JSON sidecar recording exactly what OCR
-returned. That is the evidence needed to fix it properly — an earlier attempt
+returned. That is the evidence needed to fix it properly. An earlier attempt
 was invalidated because the route resumed moving mid-experiment.
 
 ### 🌍 Non-English clients
@@ -56,7 +56,7 @@ cd bdo-autoroute-track
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Needs Windows and Python 3.11 or 3.12 — not 3.13, which the OCR engine has no
+Needs Windows and Python 3.11 or 3.12, not 3.13, which the OCR engine has no
 wheel for. `setup.cmd` checks this for you.
 
 ## Before opening a pull request
@@ -64,7 +64,7 @@ wheel for. `setup.cmd` checks this for you.
 - **`pytest` passes.** CI runs it on Windows across 3.11 and 3.12.
 - **Read [.claude/CONTEXT.md](.claude/CONTEXT.md)** if you are touching capture,
   the marker, OCR, or the state machine. It records a dozen assumptions that
-  look obviously correct and are provably wrong — every one cost a real defect.
+  look obviously correct and are provably wrong. Every one cost a real defect.
 - **Match the style in [.claude/CONVENTIONS.md](.claude/CONVENTIONS.md).**
   Briefly: rich objects and thin orchestration, nouns rather than `-er` names,
   declarative methods, and comments only where the code cannot explain *why*.
@@ -82,7 +82,7 @@ writing something that gets turned down.
 **Anything that sends input to the game.** This is read-only by design: screen
 capture only, never memory reads, never injection, never synthesised keystrokes
 or clicks. That constraint is what separates it from the macro and botting
-category, and it is not negotiable — a fork that adds automation puts its users
+category, and it is not negotiable. A fork that adds automation puts its users
 in a genuinely different position, and should not carry this name.
 
 ## Not affiliated with Pearl Abyss
@@ -91,4 +91,4 @@ in a genuinely different position, and should not carry this name.
 redistributed here.** The docs include one gameplay screenshot showing what the
 marker looks like, because users have to be able to find it; beyond that, please
 do not add game assets. `icon_template.png` is generated on each user's own
-machine from their own screen and is gitignored — keep it that way.
+machine from their own screen and is gitignored. Keep it that way.

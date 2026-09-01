@@ -2,7 +2,7 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
-## 0.2.0 — 2026-09-01
+## 0.2.0 (2026-09-01)
 
 ### Added
 
@@ -33,7 +33,7 @@ Notable changes. Dates are when the work landed, not when it was released.
   what state it is in; the state it came from was noise on a phone screen. ETA
   stays.
 
-## 0.1.0 — 2026-09-01
+## 0.1.0 (2026-09-01)
 
 First release. Every state has now been observed against the live game.
 
@@ -46,7 +46,7 @@ First release. Every state has now been observed against the live game.
   warning, so leaving the webhook blank gives a working desktop-only setup with
   no configuration.
 - **Failure is noticed.** Three consecutive delivery failures on a channel are
-  reported loudly — a monitor that has quietly stopped notifying looks exactly
+  reported loudly. A monitor that has quietly stopped notifying looks exactly
   like one with nothing to report.
 - **Tray app** (`tray.cmd`): runs in the background with the current state in
   the tooltip, and menu entries to mute notifications, pause watching, open the
@@ -56,7 +56,7 @@ First release. Every state has now been observed against the live game.
   before the confirmed `STUCK` at 180s. Each fires once per route.
 - **Heartbeat** every minute, but only after 150m of real progress, so a short
   cadence cannot bury the alerts that matter.
-- **`notify.screenshot`** — `full`, `marker` or `none`. A full game window
+- **`notify.screenshot`**: `full`, `marker` or `none`. A full game window
   carries whispers, guild chat, your character name and the marketplace; the
   `marker` crop carries the distance readout and a little context.
 - **Optional file logging** (`logging.to_file`, or `--log` for one run),
@@ -80,12 +80,12 @@ a regression test. [.claude/CONTEXT.md](.claude/CONTEXT.md) has the full account
 - The number **does not reliably reach zero**, so arrival triggers at ≤70m.
 - The gap between the digits and the icon **shrinks as the number grows**.
   Preserving the calibrated gap clipped `14000` into `1400`.
-- OCR **drops leading digits** at too high a brightness threshold — `740` read
+- OCR **drops leading digits** at too high a brightness threshold: `740` read
   as `/40`. Measured across the same crops, 120 beat 150 by 3 anomalies to 0.
 - A dropped leading digit made readings **flicker** between `1480` and `480`,
   and each flip reset the stall timer so `STUCK` could never fire. A change no
   route could travel is now held until a second reading agrees with it.
-- **Three windows answered to the title "Black Desert"** at once — a Discord
+- **Three windows answered to the title "Black Desert"** at once: a Discord
   server, a browser tab, and the game. Windows enumerates front-to-back, so
   alt-tabbing to read an alert switched capture to Discord. The game is now
   identified by process.

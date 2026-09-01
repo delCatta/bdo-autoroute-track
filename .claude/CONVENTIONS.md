@@ -6,7 +6,7 @@ Python written to Rails/37signals conventions. Match these.
 
 Code should read like well-written prose. Every line must earn its place.
 Self-documenting code is the goal. Question abstractions and hidden magic.
-Simplify first — removing is usually better than adding. Build what is needed,
+Simplify first. Removing is usually better than adding. Build what is needed,
 not what might be useful later.
 
 ## Rich objects, thin orchestration
@@ -39,8 +39,8 @@ rules. `_worth_a_heartbeat` reads better than `_maybe_heartbeat`.
 
 ## Comments indicate a smell
 
-Names should carry the meaning. The empirical narrative — what was measured, and
-why a constant is the value it is — belongs in [CONTEXT.md](CONTEXT.md), not
+Names should carry the meaning. The empirical narrative (what was measured, and
+why a constant is the value it is) belongs in [CONTEXT.md](CONTEXT.md), not
 scattered through the source.
 
 A comment survives only when the code alone cannot explain **why**: a magic
@@ -60,7 +60,7 @@ wanting to test the tray's wording without a desktop.
 
 If something only belongs to something else, put it there. Python's unit of
 namespacing is the module, so `voyage.py` holds `Voyage`, `Progress`, `State`,
-`Status` and `Event` — they exist only for each other.
+`Status` and `Event`. They exist only for each other.
 
 ## Tests
 
@@ -78,12 +78,12 @@ class TestSighting:
   defect: what was seen, what it cost. Those are worth their space.
 - **Do not test the language or the library.** Test the behaviour that is ours.
 - Time is a parameter to `Voyage`, so whole journeys replay instantly. Keep it
-  that way — no `sleep` in tests of the state machine.
+  that way: no `sleep` in tests of the state machine.
 - Realistic data. Feeding a 3000m jump in one 30s poll tests nothing real, and
   an early version of these tests did exactly that.
 
 ## Writing
 
 Clear, concise, direct. Eliminate unnecessary words. This applies to log lines,
-alert text and error messages as much as to prose — an error that does not say
+alert text and error messages as much as to prose. An error that does not say
 what to do next is half an error.

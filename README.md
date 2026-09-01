@@ -29,18 +29,18 @@ happens. I hope it helps you too.
 09:11:12  STUCK        distance=1480m   eta=-        stalled=3m 0s   ->  phone buzzes
 ```
 
-- **Tells you the moment it matters** — arrived, stuck on terrain, or the route
+- **Tells you the moment it matters**: arrived, stuck on terrain, or the route
   lost to a crash. Plus early warnings at 500m out and 60s of no progress, while
   you can still do something about it.
 - **Discord, Windows toast, or both.** Leave the webhook blank and desktop
   notifications work with no setup at all.
 - **Lives in the tray.** The icon changes colour with the state, so a glance
-  answers "how's it going?". Mute, pause, or change settings from the menu —
-  changes apply without restarting.
+  answers "how's it going?". Switch a channel off, pause, or change settings from
+  the menu, and changes apply without restarting.
 - **Notices its own failures.** Three delivery failures in a row say so loudly.
   A monitor that has quietly stopped notifying looks exactly like one with
   nothing to report.
-- **Read-only.** Screen capture only — never memory reads, never injection,
+- **Read-only.** Screen capture only: never memory reads, never injection,
   never a synthesised keystroke.
 - **Any auto-route**, not just boats: it is the same marker land auto-pathing
   uses.
@@ -51,11 +51,11 @@ happens. I hope it helps you too.
 → extract the ZIP anywhere → run `setup.cmd`. No git required.
 
 Needs **Windows 10/11**, **Python 3.11 or 3.12** (`winget install -e --id
-Python.Python.3.12` — not 3.13, the OCR engine has no wheel for it), and Black
+Python.Python.3.12`, not 3.13, the OCR engine has no wheel for it), and Black
 Desert in **Borderless Windowed**.
 
 > **The marker has to be visible.** Everything is read from it, so keep it out
-> from under the game's own UI — **pointing the camera down** keeps it
+> from under the game's own UI. **Pointing the camera down** keeps it
 > mid-screen and away from the quest tracker and buff bar. Full-screen panels
 > like Barter Information or the world map will hide it. You do *not* need the
 > game focused or in front; window capture reads its own content.
@@ -73,10 +73,10 @@ Desert in **Borderless Windowed**.
 .\tray.cmd         # go AFK
 ```
 
-No TOML editing needed — `setup.cmd` finishes by opening a **Settings** window
+No TOML editing needed. `setup.cmd` finishes by opening a **Settings** window
 for the webhook, where alerts go, and the main thresholds. It is on the tray menu
 too. **Saved changes apply to a running monitor straight away**, from the tray,
-from `settings.cmd`, or from editing `config.toml` in an editor — nothing needs
+from `settings.cmd`, or from editing `config.toml` in an editor. Nothing needs
 restarting.
 
 Other commands: `run.cmd` (same monitor, in a console), `run.cmd --log` (record
@@ -85,7 +85,7 @@ this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,
 
 ## Before you point it at a shared server
 
-A **`full`** screenshot is the whole game window — whispers, guild chat, your
+A **`full`** screenshot is the whole game window: whispers, guild chat, your
 character name, the marketplace. Perfect for your own private channel, a leak in
 a guild one.
 
@@ -109,7 +109,7 @@ screenshots of a window the same way OBS does. It never reads the game's memory,
 never injects a DLL, and never sends a keystroke or click.
 
 It observes and tells you things. It does not play for you. Pearl Abyss's
-enforcement is aimed at macros and botting — programs that automate *input* —
+enforcement is aimed at macros and botting, programs that automate *input*,
 which is a different category from this.
 
 > **That said: no third-party tool is officially sanctioned, and you use this at
@@ -118,7 +118,7 @@ which is a different category from this.
 > to you, do not run it.
 
 Not affiliated with, endorsed by, or connected to Pearl Abyss. "Black Desert
-Online" and its assets belong to them. **No game files are redistributed** — the
+Online" and its assets belong to them. **No game files are redistributed**. The
 docs include one gameplay screenshot to show what the marker looks like, and
 `icon_template.png` is generated on your own machine from your own screen and is
 gitignored.
@@ -135,7 +135,7 @@ gitignored.
 
 **Contributions are wanted, and you do not need to write code to help.** The
 three worst bugs in this project were found by someone looking at real output and
-saying "that seems off" — never by the test suite.
+saying "that seems off", never by the test suite.
 
 Most useful right now: **your resolution** (template matching is only proven at
 3440×1440), **logs of a dropped leading digit**, and **non-English clients**.
@@ -144,15 +144,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for what to send and how to run the tests
 
 ## Docs
 
-- **[How it works](docs/how-it-works.md)** — the pipeline, the three things about
+- **[How it works](docs/how-it-works.md)**: the pipeline, the three things about
   the game that shaped it, every OCR misread and its fix, calibration, tuning
 - **[Changelog](CHANGELOG.md)**
-- **[Engineering context](.claude/CONTEXT.md)** — read before changing capture,
+- **[Engineering context](.claude/CONTEXT.md)**: read before changing capture,
   the marker, OCR, or the state machine
 - **[Conventions](.claude/CONVENTIONS.md)**
 
 <div align="center">
 
-**[MIT licensed](LICENSE)** — built for people who would rather be doing something else while the boat sails.
+**[MIT licensed](LICENSE)**, built for people who would rather be doing something else while the boat sails.
 
 </div>

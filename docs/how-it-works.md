@@ -35,7 +35,7 @@ things while you can still act:
 | Notice | When |
 |---|---|
 | **Approaching destination** | distance first drops under 500m, or the readout turns red |
-| **Progress has stalled** | progress first falters for 60s — long before the confirmed `STUCK` at 180s |
+| **Progress has stalled** | progress first falters for 60s, long before the confirmed `STUCK` at 180s |
 
 Each fires once per route and resets when a new route is set, so they warn
 rather than nag.
@@ -51,8 +51,8 @@ icon is template-matched across the whole frame every poll, and the digits are
 read from a box positioned *relative to wherever the icon turned up*.
 
 **The text turns red near the destination.** Red has a *luminance* around 105,
-so any brightness threshold that keeps white text (232) drops red text entirely
-— going blind at the exact moment arrival matters most. Thresholding is done on
+so any brightness threshold that keeps white text (232) drops red text entirely,
+going blind at the exact moment arrival matters most. Thresholding is done on
 the **max colour channel** instead (white ~232, red ~230, both kept), and the
 red state doubles as a positive near-arrival signal.
 
@@ -68,14 +68,14 @@ these cost a real bug:
 | Seen | True value | Fix |
 |---|---|---|
 | `11'69 9` | 1169m | Apostrophes are thousands separators; the parser takes the run with the **most digits**, not the right-most |
-| `1400` | **14000** | The digits box preserved a calibration-time gap to the icon. That gap shrinks as the number grows, clipping the last digit — a 10x error. The box now hugs the icon |
+| `1400` | **14000** | The digits box preserved a calibration-time gap to the icon. That gap shrinks as the number grows, clipping the last digit, a 10x error. The box now hugs the icon |
 | `/40` | 740m | Threshold 150 clipped thin strokes and dropped the leading `7`. Over the same 10 crops: threshold **120** gave 0 anomalies, 150 gave 3 |
 | `480` / `1480` / `480` … | 1480m | A dropped leading digit made every flip look like a kilometre of progress, resetting the stall timer so `STUCK` could never fire |
 
 Two structural defences came out of that last one:
 
 - **Arrival needs two consecutive** sub-threshold readings. A lone misread of `9`
-  would otherwise announce "you have arrived" while you were a kilometre out —
+  would otherwise announce "you have arrived" while you were a kilometre out:
   the worst possible failure, because you stop paying attention.
 - **A jump no route could travel is held** until a second reading agrees with it.
   Real route changes confirm on the next poll; a flicker never does, so it never
@@ -87,7 +87,7 @@ reading, so jitter and drift cannot masquerade as movement.
 
 ## Capture: the window, not the screen
 
-Frames come from the game window itself via **Windows Graphics Capture** — what
+Frames come from the game window itself via **Windows Graphics Capture**, what
 OBS calls Window Capture. Anything stacked on top of the game never appears in
 the frame, so you can use the PC while it runs.
 
@@ -95,14 +95,14 @@ Measured live with windows covering the game: **50.9% of the frame differed**
 between the two backends. Window capture read the marker at 0.948 confidence;
 screen capture could not find it at all.
 
-`PrintWindow` does not work here — it returns an all-black frame for the Black
+`PrintWindow` does not work here. It returns an all-black frame for the Black
 Desert client, as it does for most DirectX games. Verified, not assumed.
 
 **Which window?** The game is found by its **process**, not its title. Three
-windows can answer to "Black Desert" at once — a Discord server called
-*Black Desert - Sailing*, a browser tab about the game, and the game itself — and
-Windows enumerates them front-to-back. Taking the first title match meant that
-alt-tabbing to read an alert started screenshotting Discord.
+windows can answer to "Black Desert" at once: a Discord server called
+*Black Desert - Sailing*, a browser tab about the game, and the game itself.
+Windows enumerates them front-to-back, and taking the first title match meant
+that alt-tabbing to read an alert started screenshotting Discord.
 
 **Minimising.** Black Desert does not minimise like a normal window:
 
@@ -113,23 +113,23 @@ Black Desert      IsIconic=FALSE  client 3440x1440  rect (0,0,3440,1440)
 ```
 
 Because the game keeps a valid rect while hidden, capture is *attempted* rather
-than refused on principle — only a missing frame proves it cannot be read. If it
+than refused on principle. Only a missing frame proves it cannot be read. If it
 cannot, you get a `SIGNAL_LOST` alert naming the real reason.
 
 `capture.method = "screen"` grabs the desktop rectangle instead, and is the
 automatic fallback if Graphics Capture is unavailable. The two backends render
-colours slightly differently — a template cut under one scored 0.86 under the
-other — so **re-run calibrate if you change it**.
+colours slightly differently, and a template cut under one scored 0.86 under
+the other, so **re-run calibrate if you change it**.
 
 ## Keeping the marker visible
 
-**Everything depends on the marker being on screen.** It is small — the distance
+**Everything depends on the marker being on screen.** It is small: the distance
 digits and a route icon beside them, drawn over the world at the destination:
 
 <img src="../assets/marker-example.png" alt="The route marker in game: 2130 metres and the route icon, over a ship deck" width="420">
 
 That is 2130 metres to go, and a good camera angle: pointed down, marker clear
-of the ship and the UI. This is the whole input — the number and the icon.
+of the ship and the UI. This is the whole input: the number and the icon.
 
 If it is hidden, the tool reports `marker not found`, and after
 `detect.missing_confirm_polls` polls it says it has lost the route. It will not
@@ -138,7 +138,7 @@ invent a reading, but it cannot watch what it cannot see.
 **Point the camera down.** The marker is drawn at a world position, so a low,
 downward camera angle keeps it in the middle of the screen and away from the
 edges. A flat or upward angle pushes it toward the top of the frame, where the
-buff bar, quest tracker and minimap live — and any of those sitting over it will
+buff bar, quest tracker and minimap live, and any of those sitting over it will
 hide it.
 
 A few things that hide it in practice:
@@ -147,7 +147,7 @@ A few things that hide it in practice:
   inventory, and the marketplace all cover most of the frame.
 - **The top of the screen**, where the quest tracker and notifications appear.
 - **The screen edge.** If the marker drifts far enough that the digits fall off
-  the frame, the tool says so specifically — the icon is seen but unreadable —
+  the frame, the tool says so specifically (the icon is seen but unreadable)
   rather than pretending it is missing.
 
 You do not need the game focused, and you do not need it in front. Window
@@ -160,18 +160,18 @@ the game's own UI.
 Start an auto-route so the marker is on screen, then `.\calibrate.cmd`. You will
 be asked for two boxes:
 
-1. **The distance digits** — just the number. Not the icon.
-2. **The icon beside them** — box it tightly; this becomes the template used to
+1. **The distance digits**: just the number. Not the icon.
+2. **The icon beside them**: box it tightly; this becomes the template used to
    find the marker as it moves.
 
 Calibration then re-finds the marker, reads it back, and **measures the match
 threshold for you**: it blanks the marker, re-matches to find the scenery noise
 floor, and warns if `marker.match_threshold` sits too close to it. On a real
-3440×1440 frame the marker scores 1.00 and scenery tops out near 0.72 — which is
+3440×1440 frame the marker scores 1.00 and scenery tops out near 0.72, which is
 why the default is 0.85. Set it too low and deck texture gets mistaken for the
 marker, and a fabricated distance is reported.
 
-If the reading fails, open `debug/stencil.png` — the exact black-on-white image
+If the reading fails, open `debug/stencil.png`, the exact black-on-white image
 the OCR engine receives:
 
 - digits faint or broken up: **lower** `ocr.brightness_threshold`
@@ -209,8 +209,8 @@ window covers the common ones.
 ## Housekeeping
 
 **Logging to a file is off by default.** Turn it on with `--log`, or set
-`logging.to_file = true`. It records every poll with full timestamps — whether or
-not an alert fired — rotating at `max_mb` across `keep_files`. Intermittent
+`logging.to_file = true`. It records every poll with full timestamps, whether or
+not an alert fired, rotating at `max_mb` across `keep_files`. Intermittent
 misreads are the hard ones, and they are only diagnosable against a record.
 
 `captures/` and `debug/` are working files, cleared after `storage.retain_days`.
@@ -222,13 +222,13 @@ clean reads of "600" teach a model nothing while one misread teaches it plenty.
 | Category | What lands here |
 |---|---|
 | `unparsed` | marker found, no number readable |
-| `no_marker` | nothing matched — negative examples, downscaled |
+| `no_marker` | nothing matched: negative examples, downscaled |
 | `low_confidence` | matched only just above the threshold |
 | `red` | the near-arrival red text: rare, easy to get wrong |
 | `ordinary` | clean reads, throttled to one per `sample_every_minutes` |
 
 Each sample is a PNG plus a JSON sidecar with the raw OCR text, parsed value, red
-ratio, match confidence and boxes — enough to re-label later without guessing.
+ratio, match confidence and boxes, enough to re-label later without guessing.
 
 ## Prior art
 
@@ -236,12 +236,12 @@ Nobody had built this; the pieces existed separately.
 
 | Project | Why it is not this |
 |---|---|
-| [BDO Life Companion](https://github.com/kurohige/BdoLifeCompanion-Pub) | Barter tracking, but manual entry — it explicitly does not read screen or memory |
+| [BDO Life Companion](https://github.com/kurohige/BdoLifeCompanion-Pub) | Barter tracking, but manual entry; it explicitly does not read screen or memory |
 | [BDO Loot Tracker](https://github.com/janhnguyen/BDO-Loot-Tracker) | OCR overlay, but reads loot, not navigation |
 | [BDO Barter Inventory Bot](https://github.com/pmazumder3927/BDO-Barter-Inventory-Bot) | One-shot inventory screenshot, no monitoring loop |
 | [BDO Boss Alerts](https://github.com/Hermitter/BDO-Boss-Alerts) / [BDO-Alerts](https://github.com/LoadingMagic/BDO-Alerts) | Global server events, never your character |
 
-Ships snagging on auto-path is a long-standing, documented problem —
+Ships snagging on auto-path is a long-standing, documented problem.
 [BDFoundry](https://www.blackdesertfoundry.com/global-lab-updates-10th-april-2026/)
 records Pearl Abyss relocating objects around Star of Margoria because of it, and
 [GrumpyG's sailing FAQ](https://grumpygreen.cricket/bdo-sailing-faq-for-beginners/)
@@ -272,5 +272,5 @@ src/bdo_autoroute/
   cli.py          argument parsing and dispatch
 ```
 
-The engineering context — including every bug found by running against the real
-game — is in [.claude/CONTEXT.md](../.claude/CONTEXT.md).
+The engineering context, including every bug found by running against the real
+game, is in [.claude/CONTEXT.md](../.claude/CONTEXT.md).

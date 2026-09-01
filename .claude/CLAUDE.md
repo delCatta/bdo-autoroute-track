@@ -1,4 +1,4 @@
-# BDO Autoroute Track — index
+# BDO Autoroute Track: index
 
 Start here. This file is a map, not a document: each entry says what the file is
 for and when to read it.
@@ -12,7 +12,7 @@ for and when to read it.
 
 **If you change how frames are captured or read, read
 [CONTEXT.md](CONTEXT.md) first.** It documents several assumptions that look
-obviously correct and are provably wrong — each one cost a real defect.
+obviously correct and are provably wrong. Each one cost a real defect.
 
 ## Also in the repo
 
@@ -23,8 +23,8 @@ obviously correct and are provably wrong — each one cost a real defect.
 
 ## handoffs/
 
-`handoffs/<TIMESTAMP>.md` — notes left mid-session so the next one can pick up
-without re-deriving anything: what was in flight, what was decided, what is
+`handoffs/<TIMESTAMP>.md` holds notes left mid-session so the next one can pick
+up without re-deriving anything: what was in flight, what was decided, what is
 still open. **Gitignored**, because they are working notes about a moment, not
 documentation of the project.
 
