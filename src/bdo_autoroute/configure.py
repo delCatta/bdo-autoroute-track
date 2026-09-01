@@ -9,12 +9,20 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
 
 from .configfile import ConfigFile
-from .settings import CONFIG, EXAMPLE_CONFIG, SCREENSHOT_MODES, WEBHOOK_PREFIX, Settings
+from .settings import (
+    CONFIG,
+    EXAMPLE_CONFIG,
+    SCREENSHOT_MODES,
+    WEBHOOK_PREFIX,
+    Settings,
+    is_webhook,
+)
 from .vault import available, protected, scrubbed
 
 log = logging.getLogger(__name__)
@@ -48,8 +56,20 @@ def open_in_editor(path: Path) -> None:
     ensure_config(path)
     try:
         os.startfile(str(path))
+        return
+    except OSError as exc:
+        # No registered handler for .toml, which is the default on a clean
+        # Windows install. Fall through to Notepad by absolute path.
+        log.debug("No association for %s (%s); using Notepad.", path.suffix, exc)
     except Exception as exc:
         log.warning("Could not open %s: %s", path, exc)
+        return
+
+    notepad = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "notepad.exe"
+    try:
+        subprocess.Popen([str(notepad), str(path)])
+    except Exception as exc:
+        log.warning("Could not open %s in Notepad: %s", path, exc)
 
 
 class SettingsWindow:
@@ -240,7 +260,7 @@ class SettingsWindow:
         if "discord" in self._channels():
             if not webhook:
                 return "Discord needs a webhook URL, or untick Discord."
-            if not webhook.startswith(WEBHOOK_PREFIX):
+            if not is_webhook(webhook):
                 return f"That does not look like a webhook URL.\nThey start with {WEBHOOK_PREFIX}"
 
         for label, variable in (
@@ -260,7 +280,7 @@ class SettingsWindow:
         from .discord import Discord
 
         webhook = self._webhook.get().strip()
-        if not webhook.startswith(WEBHOOK_PREFIX):
+        if not is_webhook(webhook):
             messagebox.showwarning(
                 "Test", f"That does not look like a webhook URL.\nThey start with {WEBHOOK_PREFIX}"
             )

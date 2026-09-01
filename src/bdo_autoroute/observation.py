@@ -77,9 +77,18 @@ class Observation:
             return RED
         return ORDINARY
 
+    def is_whole_frame(self, category: str) -> bool:
+        """Whether `sample` will hand back the entire window.
+
+        Asked rather than inferred from object identity. A privacy control that
+        rests on `image is self.frame` fails open the moment `sample` returns a
+        copy, and fails silently when it does.
+        """
+        return category == NO_MARKER or self.sighting is None or not self.sighting.readable
+
     def sample(self, category: str) -> Image.Image:
         """A missing marker only means anything as a whole frame."""
-        if category == NO_MARKER or self.sighting is None or not self.sighting.readable:
+        if self.is_whole_frame(category):
             return self.frame
         return self.sighting.digits.crop(self.frame)
 

@@ -2,6 +2,40 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.1 (2026-09-01)
+
+A second review pass over 0.4.0, which found that the occlusion fix closed half
+the hole and two of the 0.3.1 fixes were regressions.
+
+### Fixed
+
+- **A frame captured while the game was covered was still written to
+  `samples/`.** It was kept out of Discord and archived anyway, and the archive
+  is permanent. This is the common case rather than an edge one, because the
+  window covering the game is what removes the marker, which is what puts the
+  frame in the whole-frame category. The README said the frame "never leaves
+  the machine", which was true about the network and false about the disk.
+- **`discordapp.com` and the canary and ptb hosts stopped the monitor
+  loading.** 0.3.1 accepted `discord.com` only, and did it by refusing to load
+  at all, so a desktop-only setup with a stale webhook string could not start.
+  All four hosts are accepted, and an unrecognised one now switches Discord off
+  and says so rather than taking everything down with it.
+- **"Open config file" did nothing on a machine with no `.toml` association.**
+  0.3.1 swapped `notepad.exe` for `os.startfile` to fix a working-directory
+  hijack, which needs a registered handler. It falls back to Notepad by
+  absolute path.
+- `as_toml` escaped only ``, `
+` and `	`. TOML forbids all of C0 and
+  `U+007F`, so a form feed or a stray NUL still wrote a file that would not
+  parse.
+- `Window.obscured` returned "not covered" when it could not tell, while its
+  own helper returned "covered". A privacy control now fails closed either way.
+- `Desktop` registered an `atexit` handler per instance, and `build_outbox`
+  makes a fresh one on every settings save, so each save leaked one for the
+  life of the process. One handler for the process now.
+- The archive decided its privacy policy on object identity. It asks the
+  category instead.
+
 ## 0.4.0 (2026-09-01)
 
 The last two findings from the security review, both of which needed a decision
@@ -44,8 +78,9 @@ rather than a patch.
 
 ## 0.3.1 (2026-09-01)
 
-Security fixes from a review of 0.3.0. Nothing here changes how the monitor
-behaves; it changes what leaves your machine.
+Eight of the ten findings from a review of 0.3.0. Nothing here changes how the
+monitor behaves, it changes what leaves your machine. The two screenshot-scope
+findings needed a decision rather than a patch and were held back to 0.4.0.
 
 ### Fixed
 

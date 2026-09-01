@@ -83,9 +83,17 @@ class Archive:
     ) -> Path | None:
         if not self.enabled:
             return None
+        if observation.borrowed:
+            # Something was covering the game, so this frame is somebody's
+            # desktop. Worthless as a training negative for template matching,
+            # and it would sit here permanently. Keeping it out of Discord while
+            # writing it to disk forever would be the wrong half of the fix.
+            log.debug("Not archiving a frame captured while the game was covered.")
+            return None
+
         category = observation.category(match_threshold)
         image = observation.sample(category)
-        if image is observation.frame:
+        if observation.is_whole_frame(category):
             if not self.keeps_full_frames:
                 return None
             image = self._within_policy(image)

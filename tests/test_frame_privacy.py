@@ -22,8 +22,29 @@ from PIL import Image
 from bdo_autoroute.archive import Archive
 from bdo_autoroute.marker import Box, Sighting
 from bdo_autoroute.observation import Observation
-from bdo_autoroute.settings import PRIVATE_SAMPLE_WIDTH, Settings
+from bdo_autoroute.marker import Offset
+from bdo_autoroute.monitor import Monitor
+from bdo_autoroute.outbox import Outbox
+from bdo_autoroute.settings import PRIVATE_SAMPLE_WIDTH, Calibration, Settings
+from bdo_autoroute.voyage import Voyage
 from bdo_autoroute.window import Capture, PreferredCapture, ScreenCapture, Window
+
+
+def _monitor(settings: Settings) -> Monitor:
+    return Monitor(
+        settings,
+        Calibration(Offset(-86, 0, 83, 14), 3440, 1440, "icon_template.png"),
+        readout=None,
+        outbox=Outbox([]),
+        voyage=Voyage(
+            arrival_threshold_m=70.0,
+            movement_epsilon_m=15.0,
+            stuck_after_seconds=180,
+            missing_confirm_polls=4,
+            near_arrival_m=400.0,
+        ),
+        samples_dir=Path(tempfile.mkdtemp()),
+    )
 
 
 def frame() -> Image.Image:
@@ -46,7 +67,7 @@ def seen() -> Observation:
 def archive(settings: Settings) -> Archive:
     return Archive(
         root=Path(tempfile.mkdtemp()),
-        keeps_full_frames=settings.keeps_full_frame_samples,
+        keeps_full_frames=settings.wants_screenshot,
         full_frame_width=settings.sample_frame_width,
     )
 
@@ -82,10 +103,10 @@ class TestSampleWidth:
 
 
 class TestSettingsPolicy:
-    def test_full_frames_are_allowed_unless_screenshots_are_off(self):
-        assert Settings(screenshot="full").keeps_full_frame_samples
-        assert Settings(screenshot="marker").keeps_full_frame_samples
-        assert not Settings(screenshot="none").keeps_full_frame_samples
+    def test_full_frames_follow_whether_screenshots_are_wanted_at_all(self):
+        assert Settings(screenshot="full").wants_screenshot
+        assert Settings(screenshot="marker").wants_screenshot
+        assert not Settings(screenshot="none").wants_screenshot
 
     def test_only_full_keeps_the_captured_width(self):
         assert Settings(screenshot="full").sample_frame_width is None
@@ -122,18 +143,53 @@ class TestBorrowsTheDesktop:
 
 
 class TestBorrowedObservation:
+    """The invariant, not the dataclass.
+
+    An earlier version of this class asserted that an Observation stores what
+    it was handed, which is true of any dataclass and proves nothing. What has
+    to hold is that a borrowed frame reaches neither Discord nor the disk.
+    """
+
     def test_an_observation_is_not_borrowed_by_default(self):
         assert not unseen().borrowed
 
-    def test_a_borrowed_frame_is_still_read(self):
-        """The reading still happens. Only the sharing stops.
+    def test_a_borrowed_frame_is_never_archived(self):
+        """The disk half, which the first fix missed entirely.
+
+        A window covering the game is what removes the marker, so a borrowed
+        frame lands in `no_marker`, the one category kept as a whole frame. It
+        would have sat in samples/ permanently.
+        """
+        borrowed = Observation(frame=frame(), borrowed=True)
+        assert archive(Settings(screenshot="full")).keep(borrowed, match_threshold=0.85) is None
+
+    def test_an_ordinary_frame_is_still_archived(self):
+        assert archive(Settings(screenshot="full")).keep(unseen(), match_threshold=0.85)
+
+    def test_a_borrowed_frame_is_not_archived_even_as_a_digit_crop(self):
+        borrowed = Observation(
+            frame=frame(),
+            sighting=Sighting(0.97, Box(1700, 1080, 17, 16), Box(1614, 1080, 83, 14)),
+            borrowed=True,
+        )
+        assert archive(Settings(screenshot="full")).keep(borrowed, match_threshold=0.85) is None
+
+    def test_a_borrowed_frame_is_never_attached_to_an_alert(self):
+        """The network half."""
+        monitor = _monitor(Settings(screenshot="full"))
+        assert monitor._screenshot_for(Observation(frame=frame(), borrowed=True)) is None
+
+    def test_an_ordinary_frame_is_still_attached(self):
+        monitor = _monitor(Settings(screenshot="full"))
+        assert monitor._screenshot_for(unseen()) is not None
+
+    def test_the_reading_still_happens_on_a_borrowed_frame(self):
+        """Only the sharing stops.
 
         A covered window produces no marker, and that is worth reporting as a
         lost route rather than swallowing.
         """
-        observation = Observation(frame=frame(), borrowed=True)
-        assert observation.frame is not None
-        assert not observation.seen
+        assert Observation(frame=frame(), borrowed=True).category(0.85) == "no_marker"
 
 
 class TestObscured:

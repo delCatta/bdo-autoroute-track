@@ -101,10 +101,11 @@ your Windows account with DPAPI, so a `config.toml` that gets zipped or synced
 carries nothing usable. It does not protect against something already running as
 you.
 
-Alerts carry no picture at all while another window is covering the game and
-capture is reading the desktop, because that frame would show the other
-application rather than the game. Window capture, the default, reads the game's
-own buffer and never has this problem.
+While another window is covering the game and capture is reading the desktop,
+that frame would show the other application rather than the game. It is neither
+attached to an alert nor kept in `samples/`. Window capture, the default, reads
+the game's own buffer and never has this problem. Detection is best effort, so a
+click-through overlay can hide from it.
 
 Nothing else leaves the machine. No telemetry, no analytics, and the sample
 archive stays local. Samples follow the same `screenshot` setting, so choosing

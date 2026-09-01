@@ -93,7 +93,7 @@ class Monitor:
             max_per_category=settings.samples_max_per_category,
             min_interval_seconds=settings.sample_interval_seconds,
             enabled=settings.samples_enabled,
-            keeps_full_frames=settings.keeps_full_frame_samples,
+            keeps_full_frames=settings.wants_screenshot,
             full_frame_width=settings.sample_frame_width,
         )
 
@@ -176,7 +176,7 @@ class Monitor:
         self._archive.max_per_category = settings.samples_max_per_category
         self._archive.min_interval_seconds = settings.sample_interval_seconds
         self._archive.enabled = settings.samples_enabled
-        self._archive.keeps_full_frames = settings.keeps_full_frame_samples
+        self._archive.keeps_full_frames = settings.wants_screenshot
         self._archive.full_frame_width = settings.sample_frame_width
         self._voyage.retune(
             arrival_threshold_m=settings.arrival_threshold_m,

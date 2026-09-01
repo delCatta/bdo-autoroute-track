@@ -18,6 +18,22 @@ log = logging.getLogger(__name__)
 TOAST_IMAGE_WIDTH = 480
 APP_NAME = "BDO Autoroute Track"
 
+# One fixed path, and one handler for the process. Registering per instance
+# leaked a Desktop and its toaster on every hot reload, because build_outbox
+# makes a fresh one each time the settings are saved.
+SCRATCH_IMAGE = Path(tempfile.gettempdir()) / "bdo-autoroute-toast.png"
+
+
+def _discard_scratch() -> None:
+    """Drop the scratch image. Safe when it was never written."""
+    try:
+        SCRATCH_IMAGE.unlink(missing_ok=True)
+    except OSError as exc:
+        log.debug("Could not remove %s: %s", SCRATCH_IMAGE, exc)
+
+
+atexit.register(_discard_scratch)
+
 
 class Desktop:
     """Toasts into the Windows notification centre."""
@@ -36,11 +52,7 @@ class Desktop:
 
         self._toaster = WindowsToaster(app_name)
         self._icon = icon if icon and icon.exists() else None
-        self._scratch = Path(tempfile.gettempdir()) / "bdo-autoroute-toast.png"
-        # Windows reads the file while the toast is on screen, so it cannot go
-        # straight after showing one. Clearing it at exit keeps the last game
-        # frame from sitting in %TEMP% after the monitor has stopped.
-        atexit.register(self._discard)
+        self._scratch = SCRATCH_IMAGE
 
     def deliver(self, alert: Alert) -> bool:
         """Raise one toast. True on success; never raises."""
@@ -78,7 +90,8 @@ class Desktop:
 
         shot = alert.thumbnail(TOAST_IMAGE_WIDTH)
         if shot is None:
-            self._discard()
+            # Deliberately not deleting here. Windows reads the file while a
+            # toast is on screen, and the previous toast may still be up.
             return
         try:
             shot.convert("RGB").save(self._scratch, format="PNG")
@@ -90,9 +103,4 @@ class Desktop:
         except Exception as exc:
             log.debug("Could not attach the screenshot: %s", exc)
 
-    def _discard(self) -> None:
-        """Drop the scratch image. Safe when it was never written."""
-        try:
-            self._scratch.unlink(missing_ok=True)
-        except OSError as exc:
-            log.debug("Could not remove %s: %s", self._scratch, exc)
+

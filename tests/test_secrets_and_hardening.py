@@ -19,7 +19,7 @@ import requests
 
 from bdo_autoroute.configfile import as_toml
 from bdo_autoroute.discord import Discord
-from bdo_autoroute.settings import WEBHOOK_PREFIX, Settings, SettingsError
+from bdo_autoroute.settings import WEBHOOK_HOSTS, WEBHOOK_PREFIX, Settings
 from bdo_autoroute.vault import scrubbed
 
 # Shaped like a real webhook (19-digit id, 68-character token) and entirely
@@ -82,14 +82,36 @@ class TestWebhookHost:
         path.write_text(f'[notify]\ndiscord_webhook_url = "{url}"\n', encoding="utf-8")
         return Settings.load(path)
 
-    def test_another_host_is_refused_on_the_config_path(self, tmp_path):
+    def test_another_host_is_dropped_rather_than_used(self, tmp_path):
         """Hot reload means config.toml is trusted at runtime, not just at start.
 
         Anything able to write it could otherwise redirect full-window
         screenshots to an arbitrary host with no restart and no prompt.
         """
-        with pytest.raises(SettingsError, match="discord_webhook_url"):
-            self.loaded("https://evil.example/api/webhooks/1/x", tmp_path)
+        assert self.loaded("https://evil.example/api/webhooks/1/x", tmp_path).webhook_url == ""
+
+    def test_another_host_does_not_stop_the_monitor_loading(self, tmp_path):
+        """Refusing to load would stop a desktop-only setup from starting.
+
+        A stale webhook string left in a config is not a reason to take the
+        whole monitor down, and outbox.py is built on the opposite principle:
+        one dead channel must never stop the others.
+        """
+        settings = self.loaded("https://evil.example/api/webhooks/1/x", tmp_path)
+        assert settings.channels == ["discord", "desktop"]
+
+    def test_the_legacy_discord_host_still_works(self, tmp_path):
+        """discordapp.com is the old alias and Discord still serves it.
+
+        Accepting only discord.com broke configs that had worked for years.
+        """
+        url = "https://discordapp.com/api/webhooks/1111111111111111111/" + TOKEN
+        assert self.loaded(url, tmp_path).webhook_url == url
+
+    def test_every_known_discord_host_is_accepted(self, tmp_path):
+        for host in WEBHOOK_HOSTS:
+            url = f"{host}1111111111111111111/{TOKEN}"
+            assert self.loaded(url, tmp_path).webhook_url == url
 
     def test_a_real_webhook_is_accepted(self, tmp_path):
         assert self.loaded(WEBHOOK, tmp_path).webhook_url == WEBHOOK
@@ -128,3 +150,13 @@ class TestTomlEscaping:
     def test_a_multiline_mention_is_written_on_one_line(self):
         """The shape that started this, a pasted value with a newline in it."""
         assert "\n" not in as_toml("<@123>\nextra")
+
+    def test_every_control_character_round_trips(self):
+        """TOML forbids all of C0 in a basic string, not only the newline.
+
+        The first fix escaped \\r \\n \\t and stopped there, so a form feed or a
+        stray NUL from a bad paste still wrote a file that would not parse.
+        """
+        for code in list(range(0x00, 0x20)) + [0x7F]:
+            value = "a" + chr(code) + "b"
+            assert self.round_trip(value) == value, f"U+{code:04X}"

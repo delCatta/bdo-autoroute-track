@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -14,6 +15,8 @@ except ModuleNotFoundError:
 from .marker import Box, Offset
 from .vault import revealed
 
+log = logging.getLogger(__name__)
+
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "config.toml"
 EXAMPLE_CONFIG = ROOT / "config.example.toml"
@@ -24,11 +27,26 @@ CAPTURE_METHODS = ("window", "screen")
 SCREENSHOT_MODES = ("full", "marker", "none")
 NOTIFY_MODES = ("verbose", "important")
 
-# Every Discord webhook lives here. Checked on the config path as well as in
+# Where a Discord webhook may live. Checked on the config path as well as in
 # the settings window, because hot reload means anything that can write
 # config.toml could otherwise redirect full-window screenshots to another host
 # without a restart and without a prompt.
-WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
+#
+# discordapp.com is the legacy alias and still serves webhooks, and canary and
+# ptb are the other release channels. Accepting only discord.com broke configs
+# that had worked for years.
+WEBHOOK_HOSTS = (
+    "https://discord.com/api/webhooks/",
+    "https://discordapp.com/api/webhooks/",
+    "https://canary.discord.com/api/webhooks/",
+    "https://ptb.discord.com/api/webhooks/",
+)
+WEBHOOK_PREFIX = WEBHOOK_HOSTS[0]
+
+
+def is_webhook(url: str) -> bool:
+    """Whether a URL points at a Discord webhook on a host we recognise."""
+    return any(url.startswith(host) for host in WEBHOOK_HOSTS)
 
 # How wide a whole-frame sample may be once notify.screenshot says the full
 # window is too much to share. Wide enough to stay useful as a negative example
@@ -44,6 +62,25 @@ OCR_BACKENDS = ("rapidocr", "tesseract")
 
 class SettingsError(RuntimeError):
     pass
+
+
+def _trusted_webhook(url: str) -> str:
+    """The webhook if it points somewhere we recognise, otherwise nothing.
+
+    Deliberately not a SettingsError. Refusing to load stops the whole monitor,
+    including a desktop-only setup that merely has a stale webhook string left
+    in its config, and outbox.py is built on the opposite principle: one dead
+    channel must never stop the others. So Discord is dropped and said so, and
+    everything else carries on.
+    """
+    if not url or is_webhook(url):
+        return url
+    log.error(
+        "notify.discord_webhook_url does not point at Discord, so the Discord "
+        "channel is switched off. Webhooks start with one of %s.",
+        ", ".join(WEBHOOK_HOSTS),
+    )
+    return ""
 
 
 def _legacy_screenshot(notify: dict, fallback: "Settings") -> str:
@@ -181,19 +218,16 @@ class Settings:
         return {"discord": self.discord_mode, "desktop": self.desktop_mode}
 
     @property
-    def keeps_full_frame_samples(self) -> bool:
-        """Whether a sample may be a whole window frame.
+    def sample_frame_width(self) -> int | None:
+        """How wide a whole-frame sample may be. None means as captured.
 
         The `no_marker` category is a whole frame by nature, because a missing
-        marker only means anything in context. Somebody who set
-        notify.screenshot away from "full" for privacy did not expect whole
-        frames on disk either.
+        marker only means anything in context, so it follows the same policy as
+        an alert screenshot. `wants_screenshot` decides whether one may be kept
+        at all; this decides how much of it. Under "marker" the frame is kept
+        but shrunk until chat and a character name are unreadable, which is what
+        somebody choosing that setting is actually asking for.
         """
-        return self.screenshot == "full" or self.screenshot == "marker"
-
-    @property
-    def sample_frame_width(self) -> int | None:
-        """How wide a whole-frame sample may be. None means as captured."""
         return None if self.screenshot == "full" else PRIVATE_SAMPLE_WIDTH
 
     @property
@@ -276,7 +310,9 @@ class Settings:
             stalling_after_seconds=detect.get(
                 "stalling_after_seconds", fallback.stalling_after_seconds
             ),
-            webhook_url=revealed(notify.get("discord_webhook_url", fallback.webhook_url)),
+            webhook_url=_trusted_webhook(
+                revealed(notify.get("discord_webhook_url", fallback.webhook_url))
+            ),
             channels=notify.get("channels", fallback.channels),
             screenshot=notify.get("screenshot", _legacy_screenshot(notify, fallback)),
             heartbeat_minutes=notify.get("heartbeat_minutes", fallback.heartbeat_minutes),
@@ -328,11 +364,6 @@ class Settings:
         if unknown:
             raise SettingsError(
                 f"Unknown notify.channels {unknown}; use 'discord' and/or 'desktop'."
-            )
-        if self.webhook_url and not self.webhook_url.startswith(WEBHOOK_PREFIX):
-            raise SettingsError(
-                "notify.discord_webhook_url does not look like a Discord "
-                f"webhook. They start with {WEBHOOK_PREFIX}"
             )
         for channel, mode in self.notification_modes.items():
             if mode not in NOTIFY_MODES:

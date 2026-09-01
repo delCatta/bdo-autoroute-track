@@ -88,17 +88,24 @@ class Window:
 
         Samples the middle and four inset corners. Cheap, and enough to catch a
         browser or a chat client parked over the game.
+
+        Best effort, and it fails closed. A click-through overlay is invisible
+        to WindowFromPoint, and the probe happens just after the frame is taken
+        rather than during it, so a window that appears between the two is
+        missed. Anything that cannot be determined counts as covered, because
+        the cost of guessing wrong is a screenshot of somebody else's screen.
         """
         try:
             import win32gui
         except ImportError:
-            return False
+            return True
 
         for x, y in self._probes():
             try:
                 on_top = win32gui.WindowFromPoint((x, y))
-            except Exception:
-                return False
+            except Exception as exc:
+                log.debug("Could not tell what is on top at %d,%d: %s", x, y, exc)
+                return True
             if not self._owns(on_top):
                 return True
         return False

@@ -14,6 +14,38 @@ from pathlib import Path
 SECTION = re.compile(r"^\s*\[([^\]]+)\]\s*$")
 
 
+# The characters TOML gives a short escape to in a basic string.
+ESCAPES = {
+    "\\": "\\\\",
+    '"': '\\"',
+    "\b": "\\b",
+    "\t": "\\t",
+    "\n": "\\n",
+    "\f": "\\f",
+    "\r": "\\r",
+}
+
+
+def escaped(text: str) -> str:
+    """One TOML basic string body, with everything it forbids spelled out.
+
+    A pasted value can carry a newline, and TOML forbids every control character
+    here, not only that one. Writing one raw produced a config.toml that no
+    longer parsed, and the failure was quiet: a running monitor keeps its stale
+    settings while the dialog falls back to defaults, so the next save could
+    reset unrelated values.
+    """
+    out = []
+    for ch in text:
+        if ch in ESCAPES:
+            out.append(ESCAPES[ch])
+        elif ch < " " or ch == "\x7f":
+            out.append(f"\\u{ord(ch):04X}")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def as_toml(value: object) -> str:
     """Render a Python value the way TOML spells it."""
     if isinstance(value, bool):
@@ -22,19 +54,7 @@ def as_toml(value: object) -> str:
         return str(value)
     if isinstance(value, (list, tuple)):
         return "[" + ", ".join(as_toml(item) for item in value) + "]"
-    text = (
-        str(value)
-        .replace("\\", "\\\\")
-        .replace('"', '\\"')
-        # A pasted value can carry a newline. Writing it raw produced a
-        # config.toml that no longer parsed, and the failure was quiet: hot
-        # reload keeps the stale settings and the dialog falls back to
-        # defaults, so the next save could reset unrelated values.
-        .replace("\r", "\\r")
-        .replace("\n", "\\n")
-        .replace("\t", "\\t")
-    )
-    return f'"{text}"'
+    return f'"{escaped(str(value))}"'
 
 
 class ConfigFile:
