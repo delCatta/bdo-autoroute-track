@@ -237,6 +237,8 @@ class Monitor:
             detail = f"  match={observation.confidence:.2f} raw={observation.raw_text!r}"
         if observation.near_indicator:
             detail += "  [readout is red]"
+        if status.held is not None:
+            detail += f"  [HELD {status.held:.0f}m: too far to be real, awaiting confirmation]"
         log.info(
             "%-12s distance=%-9s eta=%-9s stalled=%s%s",
             status.state.value,

@@ -11,7 +11,7 @@ and pings your phone — with a screenshot — the moment you **arrive**, get
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg?logo=windows&logoColor=white)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-214%20passing-2ea44f.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-224%20passing-2ea44f.svg)](tests/)
 [![Read-only](https://img.shields.io/badge/game%20access-read--only-lightgrey.svg)](#scope-and-safety)
 
 </div>
@@ -310,7 +310,7 @@ ratio, match confidence and boxes — enough to re-label later without guessing.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-214 tests. Time is a parameter to the state machine, so whole voyages replay
+224 tests. Time is a parameter to the state machine, so whole voyages replay
 instantly — jitter, recovery from stuck, new routes, dropped readings, red-text
 arrival, and every OCR misread seen live.
 
@@ -343,8 +343,6 @@ repository** — `icon_template.png` is generated on your own machine by
 Issues and PRs welcome, particularly:
 
 - **Resolutions other than 3440x1440.** The scaling code exists but is untested.
-- **A genuinely stuck route.** `stuck_after_seconds = 180` is an estimate — the
-  boat kept moving throughout development, so that path has never fired for real.
 - **The dropped leading digit.** Still unfixed at the OCR level; the state
   machine merely refuses to act on it. Run with `--log` and send `samples/`.
 - **Non-English clients**, where the readout may differ.

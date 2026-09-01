@@ -233,6 +233,14 @@ rejects it.
 ⚠️ Before ever committing, confirm `git status` does not list `config.toml`.
 One Discord webhook URL in public history is a channel anyone can spam.
 
+**#10 — A refused reading was invisible in the log.**
+A held poll reports the last accepted distance, so its log line is identical to
+an ordinary one. Reconstructing a live run from those lines produced a confident
+but wrong conclusion that the jump guard had failed, when it had worked twice.
+`Status.held` now carries the refused value and the poll line says
+`[HELD 3580m: too far to be real, awaiting confirmation]`.
+-> `tests/test_held_readings.py`
+
 ## 8. Verified vs not verified
 
 **Verified against the live game:**

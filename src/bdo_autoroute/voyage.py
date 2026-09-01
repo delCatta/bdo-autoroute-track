@@ -79,6 +79,10 @@ class Status:
     pending_arrival: bool = False
     approaching: bool = False
     stalling: bool = False
+    # A reading that was refused as impossible and is awaiting confirmation.
+    # Without this a held poll is indistinguishable from an ordinary one in the
+    # log, which is exactly how it sent one reader chasing a phantom bug.
+    held: float | None = None
 
     @property
     def changed(self) -> bool:
@@ -188,6 +192,7 @@ class Voyage:
         self._stalling = False
         self._unconfirmed: float | None = None
         self._seen_at: float | None = None
+        self._held: float | None = None
 
     @property
     def state(self) -> State:
@@ -210,6 +215,7 @@ class Voyage:
     def _seen(self, distance: float, now: float) -> Status:
         previous, self._missing = self._state, 0
         self._approaching = self._stalling = False
+        self._held = None
 
         if self._beyond_reach(distance, now):
             return self._await_confirmation(distance, previous, now)
@@ -267,6 +273,7 @@ class Voyage:
             self._state = State.TRAVELLING
             return self._status(previous, f"New route, {distance:.0f}m remaining.", now)
 
+        self._held = distance
         self._unconfirmed = distance
         return self._status(
             previous,
@@ -290,6 +297,7 @@ class Voyage:
     def _nothing_seen(self, now: float) -> Status:
         previous = self._state
         self._approaching = self._stalling = False
+        self._held = None
         self._missing += 1
         if self._missing < self._missing_confirm:
             return self._status(previous, "Nothing readable, waiting.", now)
@@ -360,6 +368,7 @@ class Voyage:
             pending_arrival=self._pending_arrival,
             approaching=self._approaching,
             stalling=self._stalling,
+            held=self._held,
             event=Event(
                 state=self._state,
                 previous=previous,
