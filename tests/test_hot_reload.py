@@ -193,3 +193,73 @@ class TestIcons:
         from bdo_autoroute.icons import every_state
 
         assert len(every_state()) == len(State) * 2
+
+
+class TestReloadsFromDisk:
+    """A save from anywhere reaches a running monitor.
+
+    Without this, a save from settings.cmd would not reach a tray started
+    separately, and the dialog would have to tell people to restart.
+    """
+
+    def monitor_watching(self, tmp_path, config, loads):
+        watcher = monitor(tmp_path, Settings(samples_enabled=False), voyage())
+        watcher.reloads_from(config, loads)
+        return watcher
+
+    def config(self, tmp_path, interval=30):
+        path = tmp_path / "config.toml"
+        path.write_text(f"[capture]\npoll_interval_seconds = {interval}\n", encoding="utf-8")
+        return path
+
+    def test_an_untouched_file_is_not_reloaded(self, tmp_path):
+        reloads = []
+        config = self.config(tmp_path)
+
+        def loads():
+            reloads.append(1)
+            return Settings.load(config), Outbox([])
+
+        watcher = self.monitor_watching(tmp_path, config, loads)
+        watcher._reload_if_changed()
+        watcher._reload_if_changed()
+        assert reloads == []
+
+    def test_a_changed_file_is_adopted(self, tmp_path):
+        config = self.config(tmp_path, interval=30)
+
+        def loads():
+            return Settings.load(config), Outbox([])
+
+        watcher = self.monitor_watching(tmp_path, config, loads)
+        assert watcher._settings.poll_interval_seconds == 30
+
+        import os
+        import time
+
+        config.write_text("[capture]\npoll_interval_seconds = 5\n", encoding="utf-8")
+        os.utime(config, (time.time() + 10, time.time() + 10))
+
+        watcher._reload_if_changed()
+        assert watcher._settings.poll_interval_seconds == 5
+
+    def test_a_broken_file_does_not_stop_the_monitor(self, tmp_path, caplog):
+        config = self.config(tmp_path)
+
+        def loads():
+            raise ValueError("not valid TOML")
+
+        watcher = self.monitor_watching(tmp_path, config, loads)
+
+        import os
+        import time
+
+        config.write_text("nonsense {", encoding="utf-8")
+        os.utime(config, (time.time() + 10, time.time() + 10))
+
+        watcher._reload_if_changed()
+        assert "could not be loaded" in caplog.text
+        assert watcher._settings.poll_interval_seconds == 30
+
+    def test_nothing_happens_without_a_watched_file(self, tmp_path):
+        monitor(tmp_path, Settings(), voyage())._reload_if_changed()

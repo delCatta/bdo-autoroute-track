@@ -69,7 +69,9 @@ Desert in **Borderless Windowed**.
 
 No TOML editing needed — `setup.cmd` finishes by opening a **Settings** window
 for the webhook, where alerts go, and the main thresholds. It is on the tray menu
-too, and saved changes apply immediately.
+too. **Saved changes apply to a running monitor straight away**, from the tray,
+from `settings.cmd`, or from editing `config.toml` in an editor — nothing needs
+restarting.
 
 Other commands: `run.cmd` (same monitor, in a console), `run.cmd --log` (record
 this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,

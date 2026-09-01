@@ -21,7 +21,7 @@ from .monitor import Monitor, build_marker, build_readout, build_voyage
 from .observation import Observation
 from .picker import digits_and_icon
 from .readout import Readout
-from .settings import ICON, ROOT, Calibration, Settings, SettingsError
+from .settings import CONFIG, ICON, ROOT, Calibration, Settings, SettingsError
 from .window import Window, blank, capture_for, process_name
 
 log = logging.getLogger("bdo_autoroute")
@@ -233,6 +233,7 @@ def run(settings: Settings, args) -> int:
         working_dirs=(CAPTURES, DEBUG),
         samples_dir=SAMPLES,
     )
+    monitor.reloads_from(CONFIG, reloader)
     return monitor.run(once=args.once)
 
 
@@ -276,6 +277,12 @@ def protect(_settings: Settings | None, _args) -> int:
     return 0
 
 
+def reloader() -> tuple[Settings, Outbox]:
+    """Fresh settings and a fresh outbox, for a monitor that spots a change."""
+    settings = Settings.load()
+    return settings, build_outbox(settings)
+
+
 def tray(settings: Settings, _args) -> int:
     """Run the monitor behind a system tray icon."""
     from .tray import Tray
@@ -289,6 +296,7 @@ def tray(settings: Settings, _args) -> int:
         working_dirs=(CAPTURES, DEBUG),
         samples_dir=SAMPLES,
     )
+    monitor.reloads_from(CONFIG, reloader)
     return Tray(monitor, icon=ROOT / "assets" / "boat.ico", logs=LOGS).run()
 
 

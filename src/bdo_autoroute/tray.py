@@ -201,7 +201,7 @@ class Tray:
             from .configure import SettingsWindow
 
             try:
-                if SettingsWindow(applies_live=True).show():
+                if SettingsWindow().show():
                     self._reload()
             except Exception as exc:
                 log.warning("Could not open settings: %s", exc)

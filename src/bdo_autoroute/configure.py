@@ -51,9 +51,7 @@ class SettingsWindow:
         path: Path = CONFIG,
         *,
         parent: tk.Misc | None = None,
-        applies_live: bool = False,
     ) -> None:
-        self._applies_live = applies_live
         self._path = ensure_config(path)
         self._config = ConfigFile(self._path)
         self._saved = False
@@ -253,7 +251,6 @@ class SettingsWindow:
 
         self._saved = True
         log.info("Settings saved to %s", self._path)
-        messagebox.showinfo(
-            "Settings", "Saved.\n\nRestart the monitor for the changes to take effect."
-        )
+        stored = "encrypted for this Windows account" if available() else "stored as plain text"
+        messagebox.showinfo("Settings", f"Saved. The webhook is {stored}.")
         self._root.destroy()

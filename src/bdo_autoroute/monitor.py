@@ -80,6 +80,9 @@ class Monitor:
         self.paused = False
         self._misses = 0
         self._blamed_resolution = False
+        self._config: Path | None = None
+        self._config_seen: float | None = None
+        self._reloader = None
         self._heartbeat = Timer(settings.heartbeat_seconds)
         self._last_heartbeat_distance: float | None = None
         self._greeted = False
@@ -119,6 +122,39 @@ class Monitor:
     @property
     def outbox(self) -> Outbox:
         return self._outbox
+
+    def reloads_from(self, path: Path, loader) -> None:
+        """Watch a config file and adopt it whenever it changes on disk.
+
+        Saving from anywhere reaches a running monitor this way - the settings
+        window, an editor, another process - so nothing has to be restarted and
+        nothing has to be told to restart.
+        """
+        self._config = path
+        self._config_seen = self._stamp()
+        self._reloader = loader
+
+    def _stamp(self) -> float | None:
+        try:
+            return self._config.stat().st_mtime if self._config else None
+        except OSError:
+            return None
+
+    def _reload_if_changed(self) -> None:
+        if self._config is None or self._reloader is None:
+            return
+        stamp = self._stamp()
+        if stamp is None or stamp == self._config_seen:
+            return
+
+        self._config_seen = stamp
+        try:
+            settings, outbox = self._reloader()
+        except Exception as exc:
+            log.error("%s changed but could not be loaded: %s", self._config.name, exc)
+            return
+        log.info("%s changed on disk.", self._config.name)
+        self.apply(settings, outbox)
 
     def apply(self, settings: Settings, outbox: Outbox) -> None:
         """Adopt new settings mid-run. Nothing is restarted.
@@ -163,6 +199,7 @@ class Monitor:
         self.halt()
 
     def _tick(self, capture) -> None:
+        self._reload_if_changed()
         if self.paused:
             return
         try:
