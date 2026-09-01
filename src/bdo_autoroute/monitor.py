@@ -367,8 +367,13 @@ class Monitor:
     def _report(self, status: Status, observation: Observation) -> None:
         distance = f"{status.distance_m:.0f}m" if status.distance_m is not None else "unknown"
         eta = duration(status.eta_seconds) if status.eta_seconds else "-"
+        # A poll that read nothing still reports the last known distance, and
+        # without this it looks exactly like a fresh measurement. Repeated
+        # identical lines were being read as "not moving" when the truth was
+        # "not seen".
         detail = ""
-        if status.distance_m is None:
+        if not status.fresh:
+            distance += " (last known)"
             detail = f"  match={observation.confidence:.2f} raw={observation.raw_text!r}"
         if observation.near_indicator:
             detail += "  [readout is red]"

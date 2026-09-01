@@ -79,6 +79,10 @@ class Status:
     pending_arrival: bool = False
     approaching: bool = False
     stalling: bool = False
+    # False when this poll produced no usable reading. The distance above is
+    # then the last known one, carried over - which reads exactly like a fresh
+    # measurement unless something says otherwise.
+    fresh: bool = True
     # A reading that was refused as impossible and is awaiting confirmation.
     # Without this a held poll is indistinguishable from an ordinary one in the
     # log, which is exactly how it sent one reader chasing a phantom bug.
@@ -196,6 +200,7 @@ class Voyage:
         self._unconfirmed: float | None = None
         self._seen_at: float | None = None
         self._held: float | None = None
+        self._fresh = False
 
     def retune(
         self,
@@ -254,6 +259,7 @@ class Voyage:
         previous, self._missing = self._state, 0
         self._approaching = self._stalling = False
         self._held = None
+        self._fresh = True
 
         if self._beyond_reach(distance, now):
             return self._await_confirmation(distance, previous, now)
@@ -312,6 +318,7 @@ class Voyage:
             return self._status(previous, f"New route, {distance:.0f}m remaining.", now)
 
         self._held = distance
+        self._fresh = False
         self._unconfirmed = distance
         return self._status(
             previous,
@@ -336,6 +343,7 @@ class Voyage:
         previous = self._state
         self._approaching = self._stalling = False
         self._held = None
+        self._fresh = False
         self._missing += 1
         if self._missing < self._missing_confirm:
             return self._status(previous, "Nothing readable, waiting.", now)
@@ -406,6 +414,7 @@ class Voyage:
             pending_arrival=self._pending_arrival,
             approaching=self._approaching,
             stalling=self._stalling,
+            fresh=self._fresh,
             held=self._held,
             event=Event(
                 state=self._state,

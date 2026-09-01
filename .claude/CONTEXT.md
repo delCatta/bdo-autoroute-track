@@ -145,10 +145,19 @@ guard had failed, when it had worked twice. The poll line now says
 `[HELD 3580m: too far to be real, awaiting confirmation]`.
 → `tests/test_held_readings.py`
 
-**#11 — `PrintWindow` returns black.** For the BDO client, as for most DirectX
+**#11 — A stale reading looked like a fresh one.** A poll that read nothing
+still reports the last known distance, so the log said
+`TRAVELLING distance=560m eta=1m 15s` three polls running while the samples
+archive recorded `no_marker` for every one. The only clue was the identical
+repeated ETA, and it reads as "not moving" rather than "not seen". `Status.fresh`
+now marks it and the line says `(last known)` plus the raw OCR text. Same class
+as #10 but on the far more common path.
+→ `tests/test_held_readings.py::TestFresh`
+
+**#12 — `PrintWindow` returns black.** For the BDO client, as for most DirectX
 games, every flag including `PW_RENDERFULLCONTENT`. Do not try it again.
 
-**#12 — Python 3.13 is not supported.** `rapidocr-onnxruntime` publishes no
+**#13 — Python 3.13 is not supported.** `rapidocr-onnxruntime` publishes no
 wheel for it. CI caught this on its first run. `setup.cmd` checks before pip
 does.
 

@@ -65,3 +65,40 @@ class TestHeld:
             if reading == 480:
                 assert status.held == 480
                 assert status.distance_m == 1480
+
+
+class TestFresh:
+    """A poll that read nothing still reports the last known distance.
+
+    Seen live: three consecutive log lines said `TRAVELLING distance=560m
+    eta=1m 15s` while the samples archive recorded `no_marker` for every one of
+    them. The repeated identical ETA was the only clue, and it reads as "not
+    moving" rather than "not seen".
+    """
+
+    def test_fresh_is_true_for_a_real_reading(self):
+        trip = voyage()
+        assert trip.update(858, now=0).fresh
+
+    def test_fresh_is_false_when_nothing_was_read(self):
+        trip = voyage()
+        trip.update(858, now=0)
+        assert not trip.update(None, now=30).fresh
+
+    def test_fresh_is_false_for_a_held_reading(self):
+        trip = voyage()
+        trip.update(858, now=0)
+        assert not trip.update(3580, now=31).fresh
+
+    def test_a_stale_status_still_carries_the_last_distance(self):
+        trip = voyage()
+        trip.update(560, now=0)
+        status = trip.update(None, now=30)
+        assert status.distance_m == 560
+        assert not status.fresh
+
+    def test_fresh_returns_once_a_reading_comes_back(self):
+        trip = voyage()
+        trip.update(560, now=0)
+        trip.update(None, now=30)
+        assert trip.update(540, now=60).fresh
