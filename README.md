@@ -9,7 +9,7 @@ and pings your phone — with a screenshot — the moment you **arrive**, get
 **stuck** on terrain, or **lose the route**.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Python 3.11-3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg?logo=windows&logoColor=white)](#requirements)
 [![Tests](https://github.com/delCatta/bdo-autoroute-track/actions/workflows/tests.yml/badge.svg)](https://github.com/delCatta/bdo-autoroute-track/actions/workflows/tests.yml)
 [![Read-only](https://img.shields.io/badge/game%20access-read--only-lightgrey.svg)](#scope-and-safety)
@@ -72,8 +72,9 @@ folder, or quit. `run.cmd` is the same thing in a console window.
 
 - **Windows 10/11** — it reads the screen, and window capture uses the Windows
   Graphics Capture API
-- **Python 3.11+** — `winget install -e --id Python.Python.3.12` if
-  `python --version` does nothing (Windows ships a Store stub that cannot make venvs)
+- **Python 3.11 or 3.12** — `winget install -e --id Python.Python.3.12`.
+  Not 3.13: the OCR engine has no wheel for it yet. Windows also ships a Store
+  stub that cannot make venvs, which `setup.cmd` detects and rejects.
 - **Black Desert in Borderless Windowed** — Fullscreen Exclusive returns black frames
 
 ## How it works

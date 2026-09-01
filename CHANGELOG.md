@@ -69,4 +69,7 @@ a regression test. [HANDOFF.md](HANDOFF.md) has the full accounting.
 - **The dropped leading digit is not fixed at the OCR level.** The state machine
   refuses to act on it, so it cannot cause a false arrival or block stuck
   detection, but readings are occasionally still wrong.
+- **Python 3.11 or 3.12 only.** `rapidocr-onnxruntime` publishes no wheel for
+  3.13. `setup.cmd` checks this and says so rather than letting pip fail with a
+  wall of resolver output.
 - Windows only, and Black Desert must run in Borderless Windowed.

@@ -36,6 +36,22 @@ if ($null -eq $python) {
 Write-Host "Using Python at $python"
 & $python --version
 
+# The OCR engine publishes no wheel for 3.13, so pip would fail here with a
+# wall of resolver noise. Say why instead.
+$versionText = (& $python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+$parts = $versionText.Split(".")
+$major = [int]$parts[0]; $minor = [int]$parts[1]
+if ($major -ne 3 -or $minor -lt 11 -or $minor -gt 12) {
+    Write-Host ""
+    Write-Host "Python $versionText is not supported." -ForegroundColor Red
+    Write-Host "This needs Python 3.11 or 3.12 - the OCR engine has no wheel for 3.13 yet."
+    Write-Host ""
+    Write-Host "    winget install -e --id Python.Python.3.12" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Then open a NEW terminal and run .\setup.cmd again."
+    exit 1
+}
+
 # --- create the venv -----------------------------------------------------
 if (-not (Test-Path ".venv")) {
     Write-Host "Creating virtual environment in .venv ..."

@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Watch the Black Desert Online auto-route marker and get alerted on arrival, a stall, or a lost route."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
+# Capped by rapidocr-onnxruntime, which publishes no wheel for 3.13.
+requires-python = ">=3.11,<3.13"
 authors = [{ name = "delCatta" }]
 keywords = ["black-desert-online", "bdo", "ocr", "discord", "screen-capture", "afk"]
 
@@ -20,7 +21,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Games/Entertainment",
 ]
 
