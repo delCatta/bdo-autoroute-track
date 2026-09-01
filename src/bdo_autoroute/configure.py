@@ -21,6 +21,11 @@ log = logging.getLogger(__name__)
 
 WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
 
+# What each notification mode is called in the dialog, and back again. The
+# config stores the short word; nobody should have to guess what "verbose" does.
+MODE_LABELS = {"verbose": "Everything", "important": "Important only"}
+MODE_VALUES = {label: mode for mode, label in MODE_LABELS.items()}
+
 SCREENSHOT_EXPLAINED = {
     "full": "Full window, includes chat and your character name",
     "marker": "Just the marker, no chat, safe for shared servers",
@@ -65,6 +70,8 @@ class SettingsWindow:
         self._mention = tk.StringVar(value=current.mention)
         self._to_discord = tk.BooleanVar(value="discord" in current.channels)
         self._to_desktop = tk.BooleanVar(value="desktop" in current.channels)
+        self._discord_mode = tk.StringVar(value=MODE_LABELS[current.discord_mode])
+        self._desktop_mode = tk.StringVar(value=MODE_LABELS[current.desktop_mode])
         self._screenshot = tk.StringVar(value=current.screenshot)
         self._poll = tk.StringVar(value=str(current.poll_interval_seconds))
         self._arrival = tk.StringVar(value=str(int(current.arrival_threshold_m)))
@@ -97,12 +104,35 @@ class SettingsWindow:
         )
         row += 1
 
-        ttk.Checkbutton(frame, text="Discord", variable=self._to_discord).grid(
-            row=row, column=0, sticky="w"
-        )
-        ttk.Checkbutton(
-            frame, text="Windows notification", variable=self._to_desktop
-        ).grid(row=row, column=1, columnspan=2, sticky="w")
+        for label, enabled, mode, hint in (
+            ("Discord", self._to_discord, self._discord_mode, "a phone alert is cheap to ignore"),
+            (
+                "Windows notification",
+                self._to_desktop,
+                self._desktop_mode,
+                "a toast every minute teaches you to dismiss them",
+            ),
+        ):
+            ttk.Checkbutton(frame, text=label, variable=enabled).grid(
+                row=row, column=0, sticky="w"
+            )
+            ttk.Combobox(
+                frame,
+                textvariable=mode,
+                values=list(MODE_LABELS.values()),
+                state="readonly",
+                width=16,
+            ).grid(row=row, column=1, sticky="w")
+            ttk.Label(frame, text=hint, foreground="#666").grid(
+                row=row, column=2, sticky="w"
+            )
+            row += 1
+
+        ttk.Label(
+            frame,
+            text="Important only skips the heartbeat and sends what needs you.",
+            foreground="#666",
+        ).grid(row=row, column=0, columnspan=3, sticky="w", pady=(2, 0))
         row += 1
 
         ttk.Label(frame, text="Webhook URL").grid(row=row, column=0, sticky="w", pady=(10, 0))
@@ -256,6 +286,8 @@ class SettingsWindow:
             "notify", "discord_webhook_url", protected(self._webhook.get().strip())
         )
         self._config.set("notify", "mention", self._mention.get().strip())
+        self._config.set("notify", "discord_mode", MODE_VALUES[self._discord_mode.get()])
+        self._config.set("notify", "desktop_mode", MODE_VALUES[self._desktop_mode.get()])
         self._config.set("notify", "screenshot", self._screenshot.get())
         self._config.set("capture", "poll_interval_seconds", int(self._poll.get()))
         self._config.set("detect", "arrival_threshold_m", float(self._arrival.get()))

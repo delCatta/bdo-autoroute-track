@@ -33,7 +33,9 @@ happens. I hope it helps you too.
   lost to a crash. Plus early warnings at 500m out and 60s of no progress, while
   you can still do something about it.
 - **Discord, Windows toast, or both.** Leave the webhook blank and desktop
-  notifications work with no setup at all.
+  notifications work with no setup at all. Each one hears as much as you want,
+  everything or only what needs you, so toasts stay rare while your phone keeps
+  the running commentary.
 - **Lives in the tray.** The icon changes colour with the state, so a glance
   answers "how's it going?". Switch a channel off, pause, or change settings from
   the menu, and changes apply without restarting.

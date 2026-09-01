@@ -43,7 +43,10 @@ class Desktop:
             from windows_toasts import Toast
 
             toast = Toast()
-            toast.text_fields = [alert.headline, alert.body]
+            # Three lines, not two. The ETA and the stall clock live in the
+            # details, and a toast without them said "Still under way" and
+            # nothing a person could act on.
+            toast.text_fields = [alert.headline, alert.body, alert.footnote]
             self._attach_images(toast, alert)
             self._toaster.show_toast(toast)
             return True

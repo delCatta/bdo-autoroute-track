@@ -2,6 +2,28 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## Unreleased
+
+### Added
+
+- **A notification mode per channel**, `verbose` or `important`. Verbose sends
+  everything, including the routine heartbeat. Important sends only what needs a
+  person, so arrivals, stalls, getting stuck and a lost route. Set it in the
+  settings window or from the channel's tray submenu, where it is written back
+  to `config.toml` rather than forgotten on the next restart.
+
+### Changed
+
+- **Windows toasts default to important only.** A toast every minute teaches you
+  to dismiss toasts without reading them, which costs you the one that mattered.
+  Discord still hears everything, because a phone alert is cheap to ignore and
+  the heartbeat is what proves the monitor is still alive. Set
+  `notify.desktop_mode = "verbose"` for the old behaviour.
+- **Toasts carry a third line** with the ETA or the stall clock. Those live in
+  the alert details, which only Discord rendered, so a toast said "Still under
+  way" and nothing anybody could act on.
+- Each channel's tray entry is now a submenu holding its switch and its mode.
+
 ## 0.2.0 (2026-09-01)
 
 ### Added

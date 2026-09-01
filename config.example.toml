@@ -74,6 +74,18 @@ arrival_confirm_polls = 2
 # warning rather than stopping the monitor.
 channels = ["discord", "desktop"]
 
+# How much each channel wants to hear.
+#   "verbose"    everything, including the routine heartbeat below.
+#   "important"  only what needs a person, so arrivals, stalls, getting stuck
+#                and a lost route. The heartbeat and the opening line are
+#                skipped.
+# Discord defaults to verbose, because a phone alert is cheap to ignore and the
+# heartbeat is what proves the monitor is still alive. A toast is not cheap to
+# ignore, and one every minute teaches you to dismiss them without reading, so
+# the desktop defaults to important.
+discord_mode = "verbose"
+desktop_mode = "important"
+
 # Create one under Discord, via Channel > Edit Channel > Integrations > Webhooks.
 #
 # Anyone holding this URL can post to that channel, so it is worth protecting.

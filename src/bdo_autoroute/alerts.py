@@ -38,6 +38,28 @@ class Alert:
         return COLOURS.get(self.state, COLOURS[State.TRAVELLING])
 
     @property
+    def routine(self) -> bool:
+        """Reassurance rather than news, so the heartbeat and the opening line.
+
+        A channel set to important-only drops these. They are the ones worth
+        having on a phone and not worth a toast every minute.
+        """
+        return not self.urgent
+
+    @property
+    def footnote(self) -> str:
+        """The details on one line, for channels without a fields table.
+
+        Discord renders `stamped_details` as columns. A toast has three lines
+        and no table, so the ETA was being dropped exactly where it was most
+        useful.
+        """
+        return " \u00b7 ".join(
+            value if key == "Time" else f"{key} {value}"
+            for key, value in self.stamped_details.items()
+        )
+
+    @property
     def stamped_details(self) -> dict[str, str]:
         return {**self.details, "Time": datetime.now().strftime("%H:%M:%S")}
 

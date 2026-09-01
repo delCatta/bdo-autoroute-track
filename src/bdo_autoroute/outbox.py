@@ -19,6 +19,14 @@ log = logging.getLogger(__name__)
 # possible failure: it looks exactly like one with nothing to report.
 FAILURES_BEFORE_COMPLAINT = 3
 
+# How much a channel wants to hear. "verbose" takes everything, including the
+# heartbeat; "important" takes only what a person would want to be interrupted
+# for. Desktop toasts default to important, because a toast every minute
+# teaches you to dismiss them without reading.
+VERBOSE = "verbose"
+IMPORTANT = "important"
+MODES = (VERBOSE, IMPORTANT)
+
 
 @runtime_checkable
 class Channel(Protocol):
@@ -30,10 +38,13 @@ class Channel(Protocol):
 class Outbox:
     """Every channel an alert should reach."""
 
-    def __init__(self, channels: list[Channel]) -> None:
+    def __init__(
+        self, channels: list[Channel], modes: dict[str, str] | None = None
+    ) -> None:
         self._channels = channels
         self._failures: dict[str, int] = {}
         self._silenced: set[str] = set()
+        self._modes = dict(modes or {})
 
     @property
     def names(self) -> list[str]:
@@ -60,6 +71,20 @@ class Outbox:
     def silenced(self, name: str) -> bool:
         return name in self._silenced
 
+    def mode(self, name: str) -> str:
+        return self._modes.get(name, VERBOSE)
+
+    def set_mode(self, name: str, mode: str) -> None:
+        self._modes[name] = mode
+
+    def carries(self, name: str, alert: Alert) -> bool:
+        """Whether this channel wants this alert at all.
+
+        Separate from `silenced`. A channel that skips the heartbeat has not
+        stopped working, so a skip must never count as a delivery failure.
+        """
+        return not (alert.routine and self.mode(name) == IMPORTANT)
+
     def silence(self, name: str, quiet: bool = True) -> None:
         """Stop or resume one channel, leaving the rest alone."""
         if quiet:
@@ -78,9 +103,16 @@ class Outbox:
         A silenced channel is skipped before anything is counted, so choosing to
         be quiet is never mistaken for a channel that has stopped working.
         """
-        speaking = [c for c in self._channels if not self.silenced(c.name)]
-        if self._channels and not speaking:
+        listening = [c for c in self._channels if not self.silenced(c.name)]
+        if self._channels and not listening:
             log.info("Every channel is off, so %r was not sent.", alert.headline)
+            return False
+
+        speaking = [c for c in listening if self.carries(c.name, alert)]
+        if listening and not speaking:
+            log.debug(
+                "%r is routine and every channel wants important only.", alert.headline
+            )
             return False
 
         delivered = False

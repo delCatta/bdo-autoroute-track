@@ -17,6 +17,7 @@ from PIL import Image
 
 from .icons import every_state, for_state
 from .monitor import Monitor
+from .outbox import IMPORTANT, VERBOSE
 from .voyage import State, Status, duration
 
 log = logging.getLogger(__name__)
@@ -119,18 +120,8 @@ class Tray:
                 pystray.MenuItem(lambda _item: self._facts.timing, None, enabled=False),
                 pystray.MenuItem(lambda _item: self._facts.delivery, None, enabled=False),
                 pystray.Menu.SEPARATOR,
-                pystray.MenuItem(
-                    "Discord alerts",
-                    self._toggle("discord"),
-                    checked=lambda _item: not self._monitor.outbox.silenced("discord"),
-                    visible=lambda _item: self._monitor.outbox.has("discord"),
-                ),
-                pystray.MenuItem(
-                    "Windows notifications",
-                    self._toggle("desktop"),
-                    checked=lambda _item: not self._monitor.outbox.silenced("desktop"),
-                    visible=lambda _item: self._monitor.outbox.has("desktop"),
-                ),
+                self._channel_menu("Discord alerts", "discord"),
+                self._channel_menu("Windows notifications", "desktop"),
                 pystray.MenuItem(
                     "Pause watching",
                     self._toggle_pause,
@@ -178,6 +169,66 @@ class Tray:
         state = State.STARTING if self._monitor.paused else self._facts.state
         muted = self._monitor.outbox.muted
         return self._icons.get((state, muted)) or for_state(state, muted=muted)
+
+    def _channel_menu(self, label: str, channel: str):
+        """One channel's submenu, holding its switch and how much it wants.
+
+        Both controls belong together. Kept off the top level so the menu stays
+        readable when a second channel is configured.
+        """
+        pystray = self._pystray
+        return pystray.MenuItem(
+            label,
+            pystray.Menu(
+                pystray.MenuItem(
+                    "Send alerts",
+                    self._toggle(channel),
+                    checked=lambda _item: not self._monitor.outbox.silenced(channel),
+                ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Everything",
+                    self._choose(channel, VERBOSE),
+                    checked=lambda _item: self._monitor.outbox.mode(channel) == VERBOSE,
+                    radio=True,
+                ),
+                pystray.MenuItem(
+                    "Important only",
+                    self._choose(channel, IMPORTANT),
+                    checked=lambda _item: self._monitor.outbox.mode(channel) == IMPORTANT,
+                    radio=True,
+                ),
+            ),
+            visible=lambda _item: self._monitor.outbox.has(channel),
+        )
+
+    def _choose(self, channel: str, mode: str):
+        """A menu action that sets how much one channel wants to hear.
+
+        Written back to the config file, unlike silencing. Silence is for right
+        now; how noisy a channel should be is a preference, and losing it on
+        every restart would be its own annoyance.
+        """
+
+        def choose(_icon=None, _item=None) -> None:
+            self._monitor.outbox.set_mode(channel, mode)
+            log.info("%s alerts set to %s.", channel, mode)
+            self._store(f"{channel}_mode", mode)
+            self._refresh()
+
+        return choose
+
+    def _store(self, key: str, value: str) -> None:
+        """Persist one notify setting, leaving every comment in place."""
+        try:
+            from .configfile import ConfigFile
+            from .settings import CONFIG
+
+            config = ConfigFile(CONFIG)
+            config.set("notify", key, value)
+            config.save()
+        except Exception as exc:
+            log.warning("Could not save notify.%s: %s", key, exc)
 
     def _toggle(self, channel: str):
         """A menu action that silences or resumes one channel.

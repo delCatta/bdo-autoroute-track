@@ -22,6 +22,7 @@ ICON = ROOT / "icon_template.png"
 
 CAPTURE_METHODS = ("window", "screen")
 SCREENSHOT_MODES = ("full", "marker", "none")
+NOTIFY_MODES = ("verbose", "important")
 
 # How much room to leave around the marker when cropping. Enough to see the
 # destination name and the surrounding water, not the chat panel.
@@ -137,6 +138,11 @@ class Settings:
     urgent_states: list[str] = field(
         default_factory=lambda: ["ARRIVED", "STUCK", "SIGNAL_LOST"]
     )
+    # Discord hears everything, because a phone alert is cheap to ignore and
+    # the heartbeat is what tells you the monitor is still alive. A toast is
+    # not cheap to ignore, so the desktop hears only what needs a person.
+    discord_mode: str = "verbose"
+    desktop_mode: str = "important"
 
     ocr_backend: str = "rapidocr"
     upscale: int = 4
@@ -156,6 +162,11 @@ class Settings:
     samples_max_per_category: int = 200
     sample_every_minutes: int = 30
     save_crops: bool = False
+
+    @property
+    def notification_modes(self) -> dict[str, str]:
+        """How much each channel wants to hear, keyed the way Outbox wants it."""
+        return {"discord": self.discord_mode, "desktop": self.desktop_mode}
 
     @property
     def wants_screenshot(self) -> bool:
@@ -246,6 +257,8 @@ class Settings:
             ),
             mention=notify.get("mention", fallback.mention),
             urgent_states=notify.get("ping_on", fallback.urgent_states),
+            discord_mode=notify.get("discord_mode", fallback.discord_mode),
+            desktop_mode=notify.get("desktop_mode", fallback.desktop_mode),
             match_threshold=marker.get("match_threshold", fallback.match_threshold),
             left_slack=marker.get("left_slack", fallback.left_slack),
             ocr_backend=ocr.get("backend", fallback.ocr_backend),
@@ -288,6 +301,12 @@ class Settings:
             raise SettingsError(
                 f"Unknown notify.channels {unknown}; use 'discord' and/or 'desktop'."
             )
+        for channel, mode in self.notification_modes.items():
+            if mode not in NOTIFY_MODES:
+                raise SettingsError(
+                    f"Unknown notify.{channel}_mode {mode!r}; use "
+                    f"{', '.join(repr(m) for m in NOTIFY_MODES)}."
+                )
         if self.log_max_mb < 1:
             raise SettingsError("logging.max_mb must be at least 1.")
         if self.log_keep_files < 0:

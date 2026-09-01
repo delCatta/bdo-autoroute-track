@@ -191,7 +191,7 @@ def build_outbox(settings: Settings) -> Outbox:
             "No usable notification channels. Set notify.discord_webhook_url, "
             'or add "desktop" to notify.channels.'
         )
-    return Outbox(channels)
+    return Outbox(channels, settings.notification_modes)
 
 
 def _channel(name: str, settings: Settings):
