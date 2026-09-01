@@ -54,6 +54,12 @@ Needs **Windows 10/11**, **Python 3.11 or 3.12** (`winget install -e --id
 Python.Python.3.12` — not 3.13, the OCR engine has no wheel for it), and Black
 Desert in **Borderless Windowed**.
 
+> **The marker has to be visible.** Everything is read from it, so keep it out
+> from under the game's own UI — **pointing the camera down** keeps it
+> mid-screen and away from the quest tracker and buff bar. Full-screen panels
+> like Barter Information or the world map will hide it. You do *not* need the
+> game focused or in front; window capture reads its own content.
+
 > Use the `.cmd` files, not the `.ps1` ones. Windows ships PowerShell's execution
 > policy as `Restricted`, so `.\setup.ps1` fails with *"running scripts is
 > disabled on this system"*. Each `.cmd` runs its `.ps1` with a one-shot bypass

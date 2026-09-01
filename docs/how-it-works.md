@@ -121,6 +121,41 @@ automatic fallback if Graphics Capture is unavailable. The two backends render
 colours slightly differently — a template cut under one scored 0.86 under the
 other — so **re-run calibrate if you change it**.
 
+## Keeping the marker visible
+
+**Everything depends on the marker being on screen.** It is small — the distance
+digits and a route icon beside them, drawn over the world at the destination:
+
+```
+                    Balenos
+                  Iliya Island
+                    2130  [icon]
+```
+
+If it is hidden, the tool reports `marker not found`, and after
+`detect.missing_confirm_polls` polls it says it has lost the route. It will not
+invent a reading, but it cannot watch what it cannot see.
+
+**Point the camera down.** The marker is drawn at a world position, so a low,
+downward camera angle keeps it in the middle of the screen and away from the
+edges. A flat or upward angle pushes it toward the top of the frame, where the
+buff bar, quest tracker and minimap live — and any of those sitting over it will
+hide it.
+
+A few things that hide it in practice:
+
+- **Full-screen UI panels.** The Barter Information window, the world map,
+  inventory, and the marketplace all cover most of the frame.
+- **The top of the screen**, where the quest tracker and notifications appear.
+- **The screen edge.** If the marker drifts far enough that the digits fall off
+  the frame, the tool says so specifically — the icon is seen but unreadable —
+  rather than pretending it is missing.
+
+You do not need the game focused, and you do not need it in front. Window
+capture reads the game's own content, so you can work in another window while it
+runs. It only needs the marker to be **on the game's own screen**, unobscured by
+the game's own UI.
+
 ## Calibrating
 
 Start an auto-route so the marker is on screen, then `.\calibrate.cmd`. You will
