@@ -77,6 +77,53 @@ class Window:
     def size(self) -> tuple[int, int]:
         return self.width, self.height
 
+    @property
+    def obscured(self) -> bool:
+        """Whether another window is sitting over the drawable area.
+
+        Only matters for screen capture, which grabs the desktop rectangle the
+        window occupies rather than the window itself. Anything stacked on top
+        lands in the frame, and from there in a Discord alert. Window capture
+        reads the game's own buffer and is unaffected.
+
+        Samples the middle and four inset corners. Cheap, and enough to catch a
+        browser or a chat client parked over the game.
+        """
+        try:
+            import win32gui
+        except ImportError:
+            return False
+
+        for x, y in self._probes():
+            try:
+                on_top = win32gui.WindowFromPoint((x, y))
+            except Exception:
+                return False
+            if not self._owns(on_top):
+                return True
+        return False
+
+    def _probes(self) -> list[tuple[int, int]]:
+        inset_x, inset_y = max(1, self.width // 8), max(1, self.height // 8)
+        return [
+            (self.left + self.width // 2, self.top + self.height // 2),
+            (self.left + inset_x, self.top + inset_y),
+            (self.left + self.width - inset_x, self.top + inset_y),
+            (self.left + inset_x, self.top + self.height - inset_y),
+            (self.left + self.width - inset_x, self.top + self.height - inset_y),
+        ]
+
+    def _owns(self, hwnd: int) -> bool:
+        """Whether a window handle belongs to this window or one of its children."""
+        if hwnd == self.hwnd:
+            return True
+        try:
+            import win32gui
+
+            return win32gui.GetAncestor(hwnd, 2) == self.hwnd  # GA_ROOT
+        except Exception:
+            return False
+
     @classmethod
     def all(cls, *, include_hidden: bool = False) -> list[tuple[int, str]]:
         _require_windows()
@@ -179,6 +226,11 @@ class Capture(ABC):
     @abstractmethod
     def frame(self, window: Window) -> Image.Image: ...
 
+    @property
+    def borrows_the_desktop(self) -> bool:
+        """Whether a frame can contain windows other than the game."""
+        return False
+
     def close(self) -> None:
         pass
 
@@ -194,6 +246,10 @@ class ScreenCapture(Capture):
 
     def __init__(self) -> None:
         self._sct = mss.mss()
+
+    @property
+    def borrows_the_desktop(self) -> bool:
+        return True
 
     def close(self) -> None:
         try:
@@ -292,6 +348,13 @@ class PreferredCapture(Capture):
     def __init__(self, preferred: Capture, fallback: Capture) -> None:
         self._preferred: Capture | None = preferred
         self._fallback = fallback
+
+    @property
+    def borrows_the_desktop(self) -> bool:
+        """True once demoted, because the fallback is the desktop."""
+        if self._preferred is not None:
+            return self._preferred.borrows_the_desktop
+        return self._fallback.borrows_the_desktop
 
     def frame(self, window: Window) -> Image.Image:
         if self._preferred is not None:

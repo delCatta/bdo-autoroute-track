@@ -176,9 +176,17 @@ keep_files = 5
 # so a monitor left running for weeks does not fill the disk. 0 disables it.
 retain_days = 7
 
-# Keep a small, permanent, labelled set under samples/ for training later.
-# These are NEVER pruned. Sampling is biased towards failures, because a
-# thousand clean reads of "600" teach a model nothing while one misread does.
+# Keep a small, labelled set under samples/ for training later. Never pruned by
+# age, unlike captures/ and debug/, but capped per category by the setting
+# below. Sampling is biased towards failures, because a thousand clean reads of
+# "600" teach a model nothing while one misread does.
+#
+# Samples follow notify.screenshot, because a sample can be a whole window too.
+# The "no_marker" category is a whole frame by nature, since a missing marker
+# only means anything in context. With screenshot = "marker" those frames are
+# shrunk to 480px wide, where chat and a character name are no longer readable.
+# With "none" they are not written at all. Every other category is an 83x14 crop
+# of the number itself and carries nothing either way.
 samples_enabled = true
 
 # Per-category ceiling. Oldest are evicted first once a category is full.

@@ -2,6 +2,36 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.0 (2026-09-01)
+
+The last two findings from the security review, both of which needed a decision
+rather than a patch.
+
+### Changed
+
+- **Sample screenshots follow `notify.screenshot`.** The `no_marker` category is
+  a whole window frame by nature, because a missing marker only means anything
+  in context, so anyone who chose `screenshot = "marker"` for privacy still
+  accumulated whole frames on disk with chat and a character name in them. Those
+  frames are shrunk to 480px wide now, unreadable but still useful as negative
+  examples, and with `screenshot = "none"` they are not written at all. The
+  other categories are an 83x14 crop of the number and are untouched, because
+  they carry nothing and they are the evidence for the leading-digit misread.
+- **An alert carries no screenshot while the game is covered.** Screen capture
+  grabs the desktop rectangle, so a window parked over the game ended up in the
+  frame and then in Discord. The game window is now checked against what is
+  actually on top, and a borrowed frame is still read, since a missing marker is
+  worth reporting, but it never leaves the machine. Window capture, the default,
+  reads the game's own buffer and was never affected.
+
+### Fixed
+
+- **The tray Settings entry could do nothing at all, silently.** The import sat
+  outside the `try`, so a failure killed the thread with no window and no log
+  line. It is inside now, and logged with a traceback.
+- `config.example.toml` claimed samples are never pruned. They are capped per
+  category; it is pruning by age they escape.
+
 ## 0.3.2 (2026-09-01)
 
 ### Fixed

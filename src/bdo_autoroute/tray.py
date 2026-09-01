@@ -268,13 +268,16 @@ class Tray:
         to pystray.
         """
         def show() -> None:
-            from .configure import SettingsWindow
-
+            # The import belongs inside the try. It sat outside once, and when
+            # it failed the thread died with nothing logged and no window, which
+            # looks exactly like a menu entry that does nothing.
             try:
+                from .configure import SettingsWindow
+
                 if SettingsWindow().show():
                     self._reload()
             except Exception as exc:
-                log.warning("Could not open settings: %s", exc)
+                log.exception("Could not open settings: %s", exc)
 
         threading.Thread(target=show, daemon=True).start()
 

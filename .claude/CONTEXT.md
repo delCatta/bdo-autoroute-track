@@ -161,6 +161,15 @@ games, every flag including `PW_RENDERFULLCONTENT`. Do not try it again.
 wheel for it. CI caught this on its first run. `setup.cmd` checks before pip
 does.
 
+**#14. A running tray mixes old and new modules.** The tray imports
+`configure` lazily, so clicking Settings loads the current file from disk while
+`settings` is still the version cached in `sys.modules` from process start.
+After adding `WEBHOOK_PREFIX` to `settings.py`, that import raised `ImportError`
+against the stale module. The import sat outside the `try`, so the thread died
+with no window and nothing in the log, which looks exactly like a dead menu
+entry. The import is inside the `try` now. **Restart the tray after touching
+`src/`**, or you are testing a mixture.
+
 ## 6. Verified against the live game
 
 - `STUCK` at 3m 5s of stall on a route held at 3580m (2026-09-01 10:48:46),

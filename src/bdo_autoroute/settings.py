@@ -30,6 +30,12 @@ NOTIFY_MODES = ("verbose", "important")
 # without a restart and without a prompt.
 WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
 
+# How wide a whole-frame sample may be once notify.screenshot says the full
+# window is too much to share. Wide enough to stay useful as a negative example
+# for template matching, narrow enough that chat and a character name are not
+# readable in it.
+PRIVATE_SAMPLE_WIDTH = 480
+
 # How much room to leave around the marker when cropping. Enough to see the
 # destination name and the surrounding water, not the chat panel.
 MARKER_CROP_MARGIN = 3.0
@@ -173,6 +179,22 @@ class Settings:
     def notification_modes(self) -> dict[str, str]:
         """How much each channel wants to hear, keyed the way Outbox wants it."""
         return {"discord": self.discord_mode, "desktop": self.desktop_mode}
+
+    @property
+    def keeps_full_frame_samples(self) -> bool:
+        """Whether a sample may be a whole window frame.
+
+        The `no_marker` category is a whole frame by nature, because a missing
+        marker only means anything in context. Somebody who set
+        notify.screenshot away from "full" for privacy did not expect whole
+        frames on disk either.
+        """
+        return self.screenshot == "full" or self.screenshot == "marker"
+
+    @property
+    def sample_frame_width(self) -> int | None:
+        """How wide a whole-frame sample may be. None means as captured."""
+        return None if self.screenshot == "full" else PRIVATE_SAMPLE_WIDTH
 
     @property
     def wants_screenshot(self) -> bool:

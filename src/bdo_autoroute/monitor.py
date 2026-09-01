@@ -86,12 +86,15 @@ class Monitor:
         self._heartbeat = Timer(settings.heartbeat_seconds)
         self._last_heartbeat_distance: float | None = None
         self._greeted = False
+        self._blamed_cover = False
         self._nagging = Timer(settings.stuck_realert_seconds)
         self._archive = Archive(
             root=samples_dir or Path("samples"),
             max_per_category=settings.samples_max_per_category,
             min_interval_seconds=settings.sample_interval_seconds,
             enabled=settings.samples_enabled,
+            keeps_full_frames=settings.keeps_full_frame_samples,
+            full_frame_width=settings.sample_frame_width,
         )
 
     def run(self, *, once: bool = False, handle_signals: bool = True) -> int:
@@ -173,6 +176,8 @@ class Monitor:
         self._archive.max_per_category = settings.samples_max_per_category
         self._archive.min_interval_seconds = settings.sample_interval_seconds
         self._archive.enabled = settings.samples_enabled
+        self._archive.keeps_full_frames = settings.keeps_full_frame_samples
+        self._archive.full_frame_width = settings.sample_frame_width
         self._voyage.retune(
             arrival_threshold_m=settings.arrival_threshold_m,
             movement_epsilon_m=settings.movement_epsilon_m,
@@ -215,7 +220,12 @@ class Monitor:
 
     def _poll(self, capture) -> None:
         window = Window.matching(self._settings.title_matches, self._settings.process_matches)
-        observation = self._look(capture.frame(window), window.size)
+        frame = capture.frame(window)
+        observation = self._look(
+            frame,
+            window.size,
+            borrowed=capture.borrows_the_desktop and window.obscured,
+        )
         self._archive.keep(observation, match_threshold=self._settings.match_threshold)
         self._save_crop(observation)
 
@@ -227,17 +237,20 @@ class Monitor:
         self._announce(status, self._screenshot_for(observation), now)
         self._tell_observers(status)
 
-    def _look(self, frame: Image.Image, size: tuple[int, int]) -> Observation:
+    def _look(
+        self, frame: Image.Image, size: tuple[int, int], *, borrowed: bool = False
+    ) -> Observation:
         self._warn_once_if_blank(frame)
         marker = self._marker_for(size)
         sighting = marker.sighting(frame)
         self._note_miss(sighting is None, size)
         if sighting is None or not sighting.readable:
-            return Observation(frame=frame, sighting=sighting)
+            return Observation(frame=frame, sighting=sighting, borrowed=borrowed)
         return Observation(
             frame=frame,
             sighting=sighting,
             reading=self._readout.reading(sighting.digits.crop(frame)),
+            borrowed=borrowed,
         )
 
     def _announce(self, status: Status, frame: Image.Image, now: float) -> None:
@@ -324,12 +337,25 @@ class Monitor:
         )
 
     def _screenshot_for(self, observation: Observation) -> Image.Image | None:
-        """As much of the screen as the settings permit."""
+        """As much of the screen as the settings permit, and no more."""
         if not self._settings.wants_screenshot:
+            return None
+        if observation.borrowed:
+            self._warn_once_about_cover()
             return None
         if self._settings.crops_screenshot:
             return observation.neighbourhood(MARKER_CROP_MARGIN)
         return observation.frame
+
+    def _warn_once_about_cover(self) -> None:
+        if self._blamed_cover:
+            return
+        self._blamed_cover = True
+        log.warning(
+            "Something is covering the game and capture is reading the desktop, "
+            "so alerts will carry no screenshot until it is uncovered. Set "
+            'capture.method = "window" to read the game window directly.'
+        )
 
     def _tell_observers(self, status: Status) -> None:
         for observer in self._observers:

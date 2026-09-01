@@ -27,6 +27,11 @@ class Observation:
     frame: Image.Image
     sighting: Sighting | None = None
     reading: Reading | None = None
+    # True when the frame came off the desktop with something stacked over the
+    # game, so it shows another application. Such a frame is still read, because
+    # a missing marker is itself worth reporting, but it never leaves the
+    # machine.
+    borrowed: bool = False
 
     @property
     def seen(self) -> bool:

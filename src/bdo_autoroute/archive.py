@@ -55,6 +55,10 @@ class Archive:
     max_per_category: int = 200
     min_interval_seconds: float = 1800.0
     enabled: bool = True
+    # A whole-frame sample carries whatever was on screen, so it follows the
+    # same policy as an alert screenshot. None keeps it as captured.
+    keeps_full_frames: bool = True
+    full_frame_width: int | None = None
 
     def __post_init__(self) -> None:
         self._last_ordinary_at: float | None = None
@@ -80,11 +84,23 @@ class Archive:
         if not self.enabled:
             return None
         category = observation.category(match_threshold)
+        image = observation.sample(category)
+        if image is observation.frame:
+            if not self.keeps_full_frames:
+                return None
+            image = self._within_policy(image)
+
         metadata = observation.as_metadata(match_threshold)
         metadata.update(extra or {})
-        return self.record(
-            category, observation.sample(category), metadata, now=now, stamp=stamp
-        )
+        return self.record(category, image, metadata, now=now, stamp=stamp)
+
+    def _within_policy(self, image: Image.Image) -> Image.Image:
+        """A whole frame, shrunk to whatever the screenshot policy allows."""
+        width = self.full_frame_width
+        if width is None or image.width <= width:
+            return image
+        height = max(1, round(image.height * width / image.width))
+        return image.resize((width, height), Image.LANCZOS)
 
     def record(
         self,
