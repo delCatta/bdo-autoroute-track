@@ -2,6 +2,16 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.3.2 (2026-09-01)
+
+### Fixed
+
+- **The 0.3.1 test suite did not parse on Python 3.11.** A new test used a
+  backslash inside an f-string expression, which is a 3.12 feature, so `pytest`
+  stopped at collection. The monitor itself was unaffected, but CONTRIBUTING.md
+  asks people to run the tests, and on 3.11 they could not. CI caught it on the
+  runner a 3.12 development machine could not.
+
 ## 0.3.1 (2026-09-01)
 
 Security fixes from a review of 0.3.0. Nothing here changes how the monitor

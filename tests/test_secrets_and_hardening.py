@@ -100,17 +100,31 @@ class TestWebhookHost:
 
 
 class TestTomlEscaping:
+    """No backslash inside an f-string expression in this file.
+
+    That is a 3.12 feature, and this project supports 3.11. The first version
+    of these tests used one, so the file did not parse on the older runner at
+    all, and CI caught what a 3.12 development machine could not.
+    """
+
+    def round_trip(self, value: str) -> str:
+        return tomllib.loads("k = " + as_toml(value))["k"]
+
     def test_a_newline_does_not_break_the_file(self):
-        assert tomllib.loads(f"k = {as_toml('a\nb')}")["k"] == "a\nb"
+        assert self.round_trip("a\nb") == "a\nb"
 
     def test_a_carriage_return_does_not_break_the_file(self):
-        assert tomllib.loads(f"k = {as_toml('a\r\nb')}")["k"] == "a\r\nb"
+        assert self.round_trip("a\r\nb") == "a\r\nb"
 
     def test_a_tab_does_not_break_the_file(self):
-        assert tomllib.loads(f"k = {as_toml('a\tb')}")["k"] == "a\tb"
+        assert self.round_trip("a\tb") == "a\tb"
 
     def test_a_quote_still_round_trips(self):
-        assert tomllib.loads(f'k = {as_toml(chr(34) + "q")}')["k"] == '"q'
+        assert self.round_trip('say "hi"') == 'say "hi"'
 
     def test_a_backslash_still_round_trips(self):
-        assert tomllib.loads(f"k = {as_toml(chr(92) + 'p')}")["k"] == "\\p"
+        assert self.round_trip("C:\\path") == "C:\\path"
+
+    def test_a_multiline_mention_is_written_on_one_line(self):
+        """The shape that started this, a pasted value with a newline in it."""
+        assert "\n" not in as_toml("<@123>\nextra")
