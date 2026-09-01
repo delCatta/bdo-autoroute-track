@@ -13,7 +13,7 @@ marker's **remaining-distance number** and pushes a Discord alert — with a
 screenshot — when the barter boat **arrives**, gets **stuck**, or **vanishes**
 (client crash / disconnect). Built so you can AFK-sail without alt-tabbing back every ten minutes.
 
-**Status: working and verified against the live game.** 144 tests pass.
+**Status: working and verified against the live game.** 214 tests pass.
 
 ## 2. Prior art (researched, September 2026)
 
@@ -190,7 +190,16 @@ th150/x6   2 anomalies  2 misses
 
 Default is now 120. Re-run that comparison if the OCR pipeline changes.
 
-**#8 — `PrintWindow` does not work on BDO.**
+**#8 — The title matched Discord and a browser tab, not just the game.**
+Three windows answered to "Black Desert" at once: a Discord server named
+"Black Desert - Sailing", a Chrome tab showing this repo (its description
+contains the phrase), and the game. EnumWindows returns z-order, and the code
+took the first match, so alt-tabbing to read an alert silently switched capture
+to Discord. The game is now identified by process (`BlackDesert64.exe`), with
+the title as fallback only, and a warning when several titles match.
+-> `tests/test_window_choice.py`
+
+**#9 — `PrintWindow` does not work on BDO.**
 Returns an all-black frame for every flag (`PW_RENDERFULLCONTENT` included), as
 for most DirectX games. Do not try it again. Windows Graphics Capture works.
 

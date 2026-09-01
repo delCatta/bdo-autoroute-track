@@ -100,6 +100,7 @@ class Calibration:
 
 @dataclass(frozen=True)
 class Settings:
+    process_matches: list[str] = field(default_factory=lambda: ["BlackDesert64.exe"])
     title_matches: list[str] = field(default_factory=lambda: ["Black Desert"])
     capture_method: str = "window"
     poll_interval_seconds: int = 30
@@ -187,6 +188,7 @@ class Settings:
         fallback = cls()
 
         return cls(
+            process_matches=window.get("process_matches", fallback.process_matches),
             title_matches=window.get("title_matches", fallback.title_matches),
             capture_method=capture.get("method", fallback.capture_method),
             poll_interval_seconds=capture.get(

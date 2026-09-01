@@ -29,6 +29,25 @@ class WindowMinimised(CaptureError):
     """Minimised or hidden, so there are no pixels to read. See HANDOFF.md section 6, #6."""
 
 
+def process_name(hwnd: int) -> str:
+    """The executable owning a window, or "" if it cannot be read."""
+    try:
+        import win32api
+        import win32con
+        import win32process
+
+        _thread, pid = win32process.GetWindowThreadProcessId(hwnd)
+        handle = win32api.OpenProcess(
+            win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+        )
+        try:
+            return win32process.GetModuleFileNameEx(handle, 0).rsplit("\\", 1)[-1]
+        finally:
+            win32api.CloseHandle(handle)
+    except Exception:
+        return ""
+
+
 def blank(image: Image.Image) -> bool:
     """Essentially all black, as Fullscreen Exclusive mode produces."""
     return bool(np.asarray(image.convert("L")).max() <= BLANK_LUMINANCE)
@@ -47,6 +66,7 @@ class Window:
     frame_left: int
     frame_top: int
     visible: bool = True
+    process: str = ""
 
     @property
     def offset(self) -> tuple[int, int]:
@@ -75,11 +95,11 @@ class Window:
         return found
 
     @classmethod
-    def matching(cls, titles: list[str]) -> "Window":
+    def matching(cls, titles: list[str], processes: list[str] | None = None) -> "Window":
         _require_windows()
         import win32gui
 
-        hwnd, title, visible = cls._first_matching(titles)
+        hwnd, title, visible = cls._pick(titles, processes or [])
 
         _, _, width, height = win32gui.GetClientRect(hwnd)
         if win32gui.IsIconic(hwnd) or width <= 0 or height <= 0:
@@ -100,27 +120,52 @@ class Window:
             frame_left=frame_left,
             frame_top=frame_top,
             visible=visible,
+            process=process_name(hwnd),
         )
 
     @classmethod
-    def _first_matching(cls, titles: list[str]) -> tuple[int, str, bool]:
-        needles = [t.lower() for t in titles]
+    def _pick(cls, titles: list[str], processes: list[str]) -> tuple[int, str, bool]:
+        """The game window, preferring the process over the title.
 
-        def hits(windows: list[tuple[int, str]]) -> list[tuple[int, str]]:
-            return [w for w in windows if any(n in w[1].lower() for n in needles)]
-
-        visible = hits(cls.all())
-        if visible:
-            return visible[0][0], visible[0][1], True
-
-        hidden = hits(cls.all(include_hidden=True))
-        if hidden:
-            return hidden[0][0], hidden[0][1], False
+        Titles are treacherous: a Discord server called "Black Desert - Sailing"
+        and a browser tab about the game both match, and EnumWindows returns
+        z-order, so whichever is in front wins. Alt-tabbing to read an alert was
+        enough to start screenshotting Discord instead of the game.
+        """
+        for visible in (True, False):
+            found = cls._search(cls.all(include_hidden=not visible), titles, processes)
+            if found:
+                return found[0], found[1], visible
 
         raise CaptureError(
-            f"No window matching {titles}. "
-            "Is the game running, and is window.title_matches correct?"
+            f"No window matching processes {processes} or titles {titles}. "
+            "Is the game running, and is window.process_matches correct?"
         )
+
+    @classmethod
+    def _search(
+        cls, windows: list[tuple[int, str]], titles: list[str], processes: list[str]
+    ) -> tuple[int, str] | None:
+        wanted = [p.lower() for p in processes]
+        by_process = [w for w in windows if process_name(w[0]).lower() in wanted]
+        if by_process:
+            return by_process[0]
+
+        needles = [t.lower() for t in titles]
+        by_title = [w for w in windows if any(n in w[1].lower() for n in needles)]
+        if not by_title:
+            return None
+
+        if len(by_title) > 1:
+            log.warning(
+                "No window from %s; falling back to the title, which %d windows "
+                "match. Taking %r. Others: %s",
+                processes,
+                len(by_title),
+                by_title[0][1],
+                ", ".join(repr(t) for _h, t in by_title[1:]),
+            )
+        return by_title[0]
 
 
 def _require_windows() -> None:

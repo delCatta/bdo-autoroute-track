@@ -11,7 +11,7 @@ and pings your phone — with a screenshot — the moment you **arrive**, get
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg?logo=windows&logoColor=white)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-203%20passing-2ea44f.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-214%20passing-2ea44f.svg)](tests/)
 [![Read-only](https://img.shields.io/badge/game%20access-read--only-lightgrey.svg)](#scope-and-safety)
 
 </div>
@@ -178,6 +178,13 @@ hidden, capture is *attempted* rather than refused on principle — only a missi
 frame proves it cannot be read. If it cannot, you get a `SIGNAL_LOST` alert naming
 the real reason: it fails loudly rather than going quietly blind.
 
+**Which window?** The game is found by its **process**, not its title. Three
+windows can answer to "Black Desert" at once — a Discord server called
+*Black Desert - Sailing*, a browser tab about the game, and the game itself — and
+Windows enumerates them front-to-back. Taking the first title match meant that
+alt-tabbing to read an alert started screenshotting Discord. `.\shot.cmd` and
+`bdo_autoroute windows` both show the owning process of every candidate.
+
 `capture.method = "screen"` grabs the desktop rectangle instead, and is the
 automatic fallback if Graphics Capture is unavailable. The two backends render
 colours slightly differently — a template cut under one scored 0.86 under the
@@ -257,6 +264,7 @@ Everything lives in `config.toml`, and every value is commented.
 
 | Setting | Default | Notes |
 |---|---|---|
+| `window.process_matches` | `["BlackDesert64.exe"]` | How the game is identified. Titles are only the fallback |
 | `capture.method` | `window` | `window` = game only; `screen` = desktop rectangle |
 | `capture.poll_interval_seconds` | `30` | Keep well under `stalling_after_seconds` |
 | `detect.arrival_threshold_m` | `70` | The number does not reliably reach 0 — do not set this near it |
@@ -302,7 +310,7 @@ ratio, match confidence and boxes — enough to re-label later without guessing.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-203 tests. Time is a parameter to the state machine, so whole voyages replay
+214 tests. Time is a parameter to the state machine, so whole voyages replay
 instantly — jitter, recovery from stuck, new routes, dropped readings, red-text
 arrival, and every OCR misread seen live.
 

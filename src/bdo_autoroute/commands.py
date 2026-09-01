@@ -20,7 +20,7 @@ from .observation import Observation
 from .picker import digits_and_icon
 from .readout import Readout
 from .settings import ICON, ROOT, Calibration, Settings, SettingsError
-from .window import Window, blank, capture_for
+from .window import Window, blank, capture_for, process_name
 
 log = logging.getLogger("bdo_autoroute")
 
@@ -36,25 +36,39 @@ def frame_of(window: Window, method: str) -> Image.Image:
 
 
 def windows(settings: Settings, _args) -> int:
-    """List visible windows, so a wrong title match is easy to spot."""
+    """List windows with their processes, so a wrong match is easy to spot."""
     everything = Window.all()
+    wanted = [p.lower() for p in settings.process_matches]
     needles = [t.lower() for t in settings.title_matches]
-    matched = [w for w in everything if any(n in w[1].lower() for n in needles)]
 
-    log.info("Windows matching %s:", settings.title_matches)
-    for hwnd, title in matched or []:
-        log.info("  [MATCH] hwnd=%d  %r", hwnd, title)
-    if not matched:
-        log.warning("  none")
+    by_process = [w for w in everything if process_name(w[0]).lower() in wanted]
+    by_title = [w for w in everything if any(n in w[1].lower() for n in needles)]
+
+    log.info("Windows from %s:", settings.process_matches)
+    for hwnd, title in by_process or []:
+        log.info("  [GAME] hwnd=%-9d %-22s %r", hwnd, process_name(hwnd), title)
+    if not by_process:
+        log.warning("  none - the game does not appear to be running")
+
+    log.info("Windows whose title matches %s:", settings.title_matches)
+    for hwnd, title in by_title or []:
+        marker = "[GAME]" if (hwnd, title) in by_process else "[other]"
+        log.info("  %-7s hwnd=%-9d %-22s %r", marker, hwnd, process_name(hwnd), title)
+    if len(by_title) > 1:
+        log.warning(
+            "  %d windows share the title. Matching by process avoids picking "
+            "the wrong one; titles are only the fallback.",
+            len(by_title),
+        )
 
     log.info("All %d visible windows:", len(everything))
     for hwnd, title in everything:
-        log.info("    hwnd=%d  %r", hwnd, title)
-    return 0 if matched else 1
+        log.info("    hwnd=%-9d %-22s %r", hwnd, process_name(hwnd), title)
+    return 0 if by_process or by_title else 1
 
 
 def calibrate(settings: Settings, _args) -> int:
-    window = Window.matching(settings.title_matches)
+    window = Window.matching(settings.title_matches, settings.process_matches)
     log.info("Found %r at %dx%d", window.title, window.width, window.height)
 
     frame = frame_of(window, settings.capture_method)
@@ -108,7 +122,7 @@ def calibrate(settings: Settings, _args) -> int:
 
 def shot(settings: Settings, _args) -> int:
     """One look: where the marker is and what it reads."""
-    window = Window.matching(settings.title_matches)
+    window = Window.matching(settings.title_matches, settings.process_matches)
     log.info("Found %r at %dx%d", window.title, window.width, window.height)
     frame = frame_of(window, settings.capture_method)
 
@@ -166,7 +180,7 @@ def test_notify(settings: Settings, _args) -> int:
     alert = Alert.test_message()
     if settings.attach_screenshot:
         try:
-            window = Window.matching(settings.title_matches)
+            window = Window.matching(settings.title_matches, settings.process_matches)
             alert = alert.showing(frame_of(window, settings.capture_method))
         except Exception as exc:
             log.warning("Could not grab a screenshot (%s); sending without one.", exc)

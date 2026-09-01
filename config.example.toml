@@ -2,8 +2,14 @@
 # Copy this file to config.toml and edit. config.toml is gitignored.
 
 [window]
-# Substrings matched (case-insensitive) against visible window titles to find
-# the game client. First match wins.
+# The game is identified by its process first. Titles are treacherous: a Discord
+# server called "Black Desert - Sailing", or a browser tab about the game, match
+# just as well - and Windows enumerates windows front-to-back, so alt-tabbing to
+# read an alert was enough to start screenshotting Discord instead of the game.
+process_matches = ["BlackDesert64.exe"]
+
+# Fallback only, used when no window from process_matches is found. Substrings,
+# case-insensitive. `windows` lists every candidate with its process.
 title_matches = ["Black Desert"]
 # BDO must run in Borderless Windowed or Windowed mode. Fullscreen Exclusive
 # makes most screen-capture APIs return black frames.

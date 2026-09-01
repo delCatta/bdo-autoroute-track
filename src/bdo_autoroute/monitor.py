@@ -124,7 +124,7 @@ class Monitor:
             log.exception("Unexpected error during poll; continuing.")
 
     def _poll(self, capture) -> None:
-        window = Window.matching(self._settings.title_matches)
+        window = Window.matching(self._settings.title_matches, self._settings.process_matches)
         observation = self._look(capture.frame(window), window.size)
         self._archive.keep(observation, match_threshold=self._settings.match_threshold)
         self._save_crop(observation)
