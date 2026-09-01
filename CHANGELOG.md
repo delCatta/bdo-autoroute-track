@@ -16,7 +16,9 @@ Notable changes. Dates are when the work landed, not when it was released.
   values start with `enc:` and are useless elsewhere. Plain URLs keep working.
 - **Each channel can be switched off on its own** from the tray. Discord only
   appears as an option when a webhook is configured, and a deliberately silent
-  channel is never mistaken for a broken one.
+  channel is never mistaken for a broken one. The menu names the channels that
+  will actually deliver, so it never claims to be alerting somewhere you just
+  switched off.
 - **File logging is in the settings window**, and turning it on or off takes
   effect immediately rather than at the next start.
 - **The tray icon carries the state** in its colour, from the same palette the

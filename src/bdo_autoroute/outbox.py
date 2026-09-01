@@ -40,6 +40,15 @@ class Outbox:
         return [c.name for c in self._channels]
 
     @property
+    def speaking(self) -> list[str]:
+        """The channels that will actually deliver, which is what to report.
+
+        `names` is every channel that exists; saying "alerting discord and
+        desktop" when desktop is switched off is a UI telling a lie.
+        """
+        return [c.name for c in self._channels if not self.silenced(c.name)]
+
+    @property
     def muted(self) -> bool:
         """Every channel switched off. Derived, so there is one way to be quiet."""
         return bool(self._channels) and all(self.silenced(c.name) for c in self._channels)

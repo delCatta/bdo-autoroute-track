@@ -182,3 +182,48 @@ class TestResolutionBlame:
         for _ in range(3):
             watcher._note_miss(True, (1846, 1031))
         assert "Re-run calibrate" not in caplog.text
+
+
+class TestSpeaking:
+    """The tray said "Alerting discord and desktop" with desktop switched off.
+
+    `names` is every channel that was configured, not every channel that will
+    deliver. Reporting the first as though it were the second made the menu
+    contradict the switch immediately above it.
+    """
+
+    class Channel:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def deliver(self, alert) -> bool:
+            return True
+
+    def outbox(self) -> Outbox:
+        return Outbox([self.Channel("discord"), self.Channel("desktop")])
+
+    def test_speaking_lists_every_channel_by_default(self):
+        assert self.outbox().speaking == ["discord", "desktop"]
+
+    def test_speaking_leaves_out_a_silenced_channel(self):
+        outbox = self.outbox()
+        outbox.silence("desktop")
+        assert outbox.speaking == ["discord"]
+
+    def test_speaking_is_empty_when_everything_is_off(self):
+        outbox = self.outbox()
+        outbox.silence("discord")
+        outbox.silence("desktop")
+        assert outbox.speaking == []
+
+    def test_speaking_takes_a_channel_back_when_it_is_switched_on(self):
+        outbox = self.outbox()
+        outbox.silence("desktop")
+        outbox.silence("desktop", False)
+        assert outbox.speaking == ["discord", "desktop"]
+
+    def test_speaking_keeps_the_configured_order(self):
+        outbox = self.outbox()
+        outbox.silence("discord")
+        outbox.silence("discord", False)
+        assert outbox.speaking == ["discord", "desktop"]

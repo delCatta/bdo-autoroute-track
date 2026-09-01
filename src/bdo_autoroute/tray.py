@@ -158,7 +158,7 @@ class Tray:
         """Take in one poll. Called after every one."""
         self._facts.update(
             status,
-            channels=self._monitor.outbox.names,
+            channels=self._monitor.outbox.speaking,
             muted=self._monitor.outbox.muted,
             paused=self._monitor.paused,
         )
@@ -192,6 +192,7 @@ class Tray:
             quiet = not outbox.silenced(channel)
             outbox.silence(channel, quiet)
             log.info("%s alerts %s.", channel, "off" if quiet else "on")
+            self._note_delivery()
             self._refresh()
 
         return switch
@@ -202,6 +203,12 @@ class Tray:
         log.info("Watching %s.", "paused" if self._monitor.paused else "resumed")
         self._facts.paused = self._monitor.paused
         self._refresh()
+
+    def _note_delivery(self) -> None:
+        """Catch the menu up straight away, rather than at the next poll."""
+        outbox = self._monitor.outbox
+        self._facts.channels = outbox.speaking
+        self._facts.muted = outbox.muted
 
     def _settings(self, _icon=None, _item=None) -> None:
         """Open the settings window on its own thread.
@@ -232,6 +239,7 @@ class Tray:
             return
 
         self._monitor.apply(settings, build_outbox(settings))
+        self._note_delivery()
         self._refresh()
 
     def _open_logs(self, _icon=None, _item=None) -> None:
