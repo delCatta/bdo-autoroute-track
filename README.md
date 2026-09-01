@@ -11,7 +11,7 @@ and pings your phone — with a screenshot — the moment you **arrive**, get
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6.svg?logo=windows&logoColor=white)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-224%20passing-2ea44f.svg)](tests/)
+[![Tests](https://github.com/delCatta/bdo-autoroute-track/actions/workflows/tests.yml/badge.svg)](https://github.com/delCatta/bdo-autoroute-track/actions/workflows/tests.yml)
 [![Read-only](https://img.shields.io/badge/game%20access-read--only-lightgrey.svg)](#scope-and-safety)
 
 </div>
@@ -39,7 +39,19 @@ marker is the same one land auto-pathing uses.
 | **Lost sight of the route** | marker gone while still far out — crash, disconnect | yes |
 | **Still under way** | every minute, once 150m has actually been covered | no |
 
-Every alert carries a screenshot of the moment it fired.
+Alerts go to **Discord**, a **Windows toast**, or both — `notify.channels`
+picks. Leave the webhook blank and desktop notifications work with no setup at
+all. Each alert carries a screenshot of the moment it fired.
+
+### Run it from the tray
+
+```powershell
+.	ray.cmd
+```
+
+Puts it in the notification area with the current state in the tooltip, and a
+right-click menu to **mute notifications**, **pause watching**, open the logs
+folder, or quit. `run.cmd` is the same thing in a console window.
 
 ## Quick start
 
@@ -274,10 +286,28 @@ Everything lives in `config.toml`, and every value is commented.
 | `detect.stuck_after_seconds` | `180` | Confirmed, nagging stuck |
 | `marker.match_threshold` | `0.85` | Must sit above the scenery floor (~0.72); calibration checks this |
 | `ocr.brightness_threshold` | `120` | 150 clipped leading digits; measured |
+| `notify.channels` | `["discord", "desktop"]` | Where alerts go. Unbuildable channels are skipped with a warning |
+| `notify.screenshot` | `full` | `full`, `marker` (crop, no chat) or `none` |
 | `notify.heartbeat_minutes` | `1` | Routine screenshot, at most this often |
 | `notify.heartbeat_min_progress_m` | `150` | ...and only after this much real progress |
 | `logging.to_file` | `false` | `--log` forces it on for one run |
 | `storage.retain_days` | `7` | Age at which `captures/` and `debug/` are cleared |
+
+## What leaves your machine
+
+A **`full`** screenshot is the whole game window — which includes whispers,
+guild chat, your character name and the marketplace. That is exactly what you
+want in your own private Discord channel, and exactly what you do not want in a
+shared guild server.
+
+```toml
+[notify]
+screenshot = "marker"   # just the readout and a little context
+```
+
+On a 3440×1440 window that is the difference between sending 3440×1440 and
+**721×112**. `none` sends text only. Nothing else leaves the machine: no
+telemetry, no analytics, and the samples archive stays local.
 
 ## Housekeeping
 
@@ -310,7 +340,7 @@ ratio, match confidence and boxes — enough to re-label later without guessing.
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-224 tests. Time is a parameter to the state machine, so whole voyages replay
+264 tests. Time is a parameter to the state machine, so whole voyages replay
 instantly — jitter, recovery from stuck, new routes, dropped readings, red-text
 arrival, and every OCR misread seen live.
 

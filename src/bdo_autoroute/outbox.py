@@ -33,6 +33,7 @@ class Outbox:
     def __init__(self, channels: list[Channel]) -> None:
         self._channels = channels
         self._failures: dict[str, int] = {}
+        self.muted = False
 
     @property
     def names(self) -> list[str]:
@@ -43,7 +44,15 @@ class Outbox:
         return not self._channels
 
     def deliver(self, alert: Alert) -> bool:
-        """Send to every channel. True if at least one accepted it."""
+        """Send to every channel. True if at least one accepted it.
+
+        Muting returns early, so a deliberate silence is never mistaken for a
+        broken channel.
+        """
+        if self.muted:
+            log.info("Muted, so %r was not sent.", alert.headline)
+            return False
+
         delivered = False
         for channel in self._channels:
             if self._deliver_one(channel, alert):

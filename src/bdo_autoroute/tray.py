@@ -51,6 +51,17 @@ class Tray:
             menu=pystray.Menu(
                 pystray.MenuItem(lambda _item: self._state, None, enabled=False),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Mute notifications",
+                    self._toggle_mute,
+                    checked=lambda _item: self._monitor.outbox.muted,
+                ),
+                pystray.MenuItem(
+                    "Pause watching",
+                    self._toggle_pause,
+                    checked=lambda _item: self._monitor.paused,
+                ),
+                pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Open logs folder", self._open_logs),
                 pystray.MenuItem("Quit", self._quit),
             ),
@@ -73,11 +84,36 @@ class Tray:
         self._state = f"{status.state.value} - {distance}"
         if status.stalled_seconds >= 1:
             self._state += f", stalled {duration(status.stalled_seconds)}"
+        if self._monitor.outbox.muted:
+            self._state += " (muted)"
+        self._refresh()
+
+    def _refresh(self) -> None:
+        """Push the current state into the tooltip and the menu."""
         try:
             self._icon.title = f"{TITLE}\n{self._state}"
             self._icon.update_menu()
         except Exception as exc:
             log.debug("Could not refresh the tray: %s", exc)
+
+    def _toggle_mute(self, _icon=None, _item=None) -> None:
+        """Stop delivering alerts, while carrying on watching.
+
+        Muting is deliberate silence, so it must never be mistaken for a broken
+        channel - the Outbox returns early rather than recording a failure.
+        """
+        outbox = self._monitor.outbox
+        outbox.muted = not outbox.muted
+        log.info("Notifications %s.", "muted" if outbox.muted else "unmuted")
+        self._refresh()
+
+    def _toggle_pause(self, _icon=None, _item=None) -> None:
+        """Stop polling entirely. Nothing is read, so nothing is missed either."""
+        self._monitor.paused = not self._monitor.paused
+        log.info("Watching %s.", "paused" if self._monitor.paused else "resumed")
+        if self._monitor.paused:
+            self._state = "paused"
+        self._refresh()
 
     def _open_logs(self, _icon=None, _item=None) -> None:
         if self._logs is None:

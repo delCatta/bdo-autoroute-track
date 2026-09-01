@@ -78,6 +78,32 @@ class Observation:
             return self.frame
         return self.sighting.digits.crop(self.frame)
 
+    def neighbourhood(self, margin: float) -> Image.Image | None:
+        """The marker and a little context, for alerts that must not carry chat.
+
+        A full game window shows whispers, guild chat, the character name and
+        the marketplace. Fine in a private channel, a leak in a shared one.
+        """
+        if self.sighting is None:
+            return None
+
+        icon, digits = self.sighting.icon, self.sighting.digits
+        left = min(icon.left, digits.left)
+        top = min(icon.top, digits.top)
+        right = max(icon.left + icon.width, digits.left + digits.width)
+        bottom = max(icon.top + icon.height, digits.top + digits.height)
+
+        pad_x = int((right - left) * margin)
+        pad_y = int((bottom - top) * margin)
+        return self.frame.crop(
+            (
+                max(0, left - pad_x),
+                max(0, top - pad_y),
+                min(self.frame.width, right + pad_x),
+                min(self.frame.height, bottom + pad_y),
+            )
+        )
+
     def as_metadata(self, match_threshold: float) -> dict[str, object]:
         return {
             "raw_ocr": self.raw_text,

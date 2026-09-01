@@ -23,7 +23,7 @@ from .outbox import Outbox
 from .marker import Marker, MarkerError
 from .observation import Observation
 from .readout import Readout
-from .settings import Calibration, Settings
+from .settings import MARKER_CROP_MARGIN, Calibration, Settings
 from .voyage import Status, Voyage, duration
 from .window import CaptureError, Window, WindowMinimised, blank, capture_for
 
@@ -77,6 +77,9 @@ class Monitor:
         self._stopping = False
         self._warned_blank = False
         self._observers: list = []
+        self.paused = False
+        self._misses = 0
+        self._blamed_resolution = False
         self._heartbeat = Timer(settings.heartbeat_seconds)
         self._last_heartbeat_distance: float | None = None
         self._greeted = False
@@ -113,6 +116,10 @@ class Monitor:
         log.info("Stopped.")
         return 0
 
+    @property
+    def outbox(self) -> Outbox:
+        return self._outbox
+
     def watch(self, observer) -> None:
         """Call `observer(status)` after every poll. Used by the tray."""
         self._observers.append(observer)
@@ -126,6 +133,8 @@ class Monitor:
         self.halt()
 
     def _tick(self, capture) -> None:
+        if self.paused:
+            return
         try:
             self._poll(capture)
         except WindowMinimised as exc:
@@ -148,13 +157,14 @@ class Monitor:
             observation.distance, now, near_indicator=observation.near_indicator
         )
         self._report(status, observation)
-        self._announce(status, observation.frame, now)
+        self._announce(status, self._screenshot_for(observation), now)
         self._tell_observers(status)
 
     def _look(self, frame: Image.Image, size: tuple[int, int]) -> Observation:
         self._warn_once_if_blank(frame)
         marker = self._marker_for(size)
         sighting = marker.sighting(frame)
+        self._note_miss(sighting is None, size)
         if sighting is None or not sighting.readable:
             return Observation(frame=frame, sighting=sighting)
         return Observation(
@@ -217,6 +227,43 @@ class Monitor:
         self._last_heartbeat_distance = status.distance_m
         return True
 
+    def _note_miss(self, missed: bool, size: tuple[int, int]) -> None:
+        """Blame a changed resolution once it is the obvious explanation.
+
+        A template scaled to a different resolution can score 0.00 and simply
+        report "marker not found" forever, with nothing pointing at the cause.
+        """
+        if not missed:
+            self._misses = 0
+            return
+
+        self._misses += 1
+        scale = self._calibration.scale_for(*size)
+        if self._blamed_resolution or abs(scale - 1.0) <= 0.01:
+            return
+        if self._misses < self._settings.missing_confirm_polls:
+            return
+
+        self._blamed_resolution = True
+        log.error(
+            "The marker has not been found in %d polls, and the game is at "
+            "%dx%d while the calibration was made at %dx%d. Template matching "
+            "does not survive that. Re-run calibrate.cmd at this resolution.",
+            self._misses,
+            size[0],
+            size[1],
+            self._calibration.width,
+            self._calibration.height,
+        )
+
+    def _screenshot_for(self, observation: Observation) -> Image.Image | None:
+        """As much of the screen as the settings permit."""
+        if not self._settings.wants_screenshot:
+            return None
+        if self._settings.crops_screenshot:
+            return observation.neighbourhood(MARKER_CROP_MARGIN)
+        return observation.frame
+
     def _tell_observers(self, status: Status) -> None:
         for observer in self._observers:
             try:
@@ -240,8 +287,7 @@ class Monitor:
         )
 
     def _send(self, alert: Alert, frame: Image.Image | None) -> None:
-        if self._settings.attach_screenshot:
-            alert = alert.showing(frame)
+        alert = alert.showing(frame)
         if self._outbox.deliver(alert):
             log.info("Alert sent: %s", alert.headline)
 

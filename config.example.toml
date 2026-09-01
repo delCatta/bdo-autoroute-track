@@ -77,8 +77,13 @@ channels = ["discord", "desktop"]
 # Create one under Discord: Channel > Edit Channel > Integrations > Webhooks.
 discord_webhook_url = ""
 
-# Attach a full-window screenshot to every alert so you can see what happened.
-attach_screenshot = true
+# How much of the screen an alert may carry.
+#   "full"   the whole game window - the most useful, and the most revealing.
+#            It includes whispers, guild chat, your character name and the
+#            marketplace. Fine in a private channel; think twice in a shared one.
+#   "marker" just the distance marker and a little context around it.
+#   "none"   text only.
+screenshot = "full"
 
 # Routine "still under way" update with a screenshot, in minutes. 0 disables it
 # and you only hear about arrivals, stalls and lost routes.

@@ -20,11 +20,23 @@ CALIBRATION = ROOT / "calibration.json"
 ICON = ROOT / "icon_template.png"
 
 CAPTURE_METHODS = ("window", "screen")
+SCREENSHOT_MODES = ("full", "marker", "none")
+
+# How much room to leave around the marker when cropping. Enough to see the
+# destination name and the surrounding water, not the chat panel.
+MARKER_CROP_MARGIN = 3.0
 OCR_BACKENDS = ("rapidocr", "tesseract")
 
 
 class SettingsError(RuntimeError):
     pass
+
+
+def _legacy_screenshot(notify: dict, fallback: "Settings") -> str:
+    """Honour the old boolean attach_screenshot if it is still in a config."""
+    if "attach_screenshot" in notify:
+        return "full" if notify["attach_screenshot"] else "none"
+    return fallback.screenshot
 
 
 @dataclass(frozen=True)
@@ -117,7 +129,7 @@ class Settings:
 
     webhook_url: str = ""
     channels: list[str] = field(default_factory=lambda: ["discord", "desktop"])
-    attach_screenshot: bool = True
+    screenshot: str = "full"
     heartbeat_minutes: int = 1
     heartbeat_min_progress_m: float = 150.0
     mention: str = ""
@@ -143,6 +155,14 @@ class Settings:
     samples_max_per_category: int = 200
     sample_every_minutes: int = 30
     save_crops: bool = False
+
+    @property
+    def wants_screenshot(self) -> bool:
+        return self.screenshot != "none"
+
+    @property
+    def crops_screenshot(self) -> bool:
+        return self.screenshot == "marker"
 
     @property
     def log_max_bytes(self) -> int:
@@ -218,7 +238,7 @@ class Settings:
             ),
             webhook_url=notify.get("discord_webhook_url", fallback.webhook_url),
             channels=notify.get("channels", fallback.channels),
-            attach_screenshot=notify.get("attach_screenshot", fallback.attach_screenshot),
+            screenshot=notify.get("screenshot", _legacy_screenshot(notify, fallback)),
             heartbeat_minutes=notify.get("heartbeat_minutes", fallback.heartbeat_minutes),
             heartbeat_min_progress_m=notify.get(
                 "heartbeat_min_progress_m", fallback.heartbeat_min_progress_m
@@ -257,6 +277,11 @@ class Settings:
             raise SettingsError("marker.match_threshold must be between 0 and 1.")
         if self.retain_days < 0:
             raise SettingsError("storage.retain_days cannot be negative.")
+        if self.screenshot not in SCREENSHOT_MODES:
+            raise SettingsError(
+                f"Unknown notify.screenshot {self.screenshot!r}; use "
+                f"{', '.join(repr(m) for m in SCREENSHOT_MODES)}."
+            )
         unknown = [c for c in self.channels if c not in ("discord", "desktop")]
         if unknown:
             raise SettingsError(

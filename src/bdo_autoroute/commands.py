@@ -208,7 +208,7 @@ def test_notify(settings: Settings, _args) -> int:
         return 2
 
     alert = Alert.test_message()
-    if settings.attach_screenshot:
+    if settings.wants_screenshot:
         try:
             window = Window.matching(settings.title_matches, settings.process_matches)
             alert = alert.showing(frame_of(window, settings.capture_method))

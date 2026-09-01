@@ -1,0 +1,48 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    # Windows-only by design: it reads the screen through Windows APIs.
+    # The tests themselves touch neither the game nor Win32, so they run
+    # headless on a clean runner.
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Test
+        run: python -m pytest -q
+
+      - name: Check the example config still loads
+        run: |
+          Copy-Item config.example.toml config.toml
+          $env:PYTHONPATH = "src"
+          python -c "from bdo_autoroute.settings import Settings; s = Settings.load(); print('defaults ok:', s.capture_method, s.screenshot, s.channels)"
+        shell: pwsh
+
+      - name: Check every module imports
+        run: |
+          $env:PYTHONPATH = "src"
+          python -c "import importlib; [importlib.import_module('bdo_autoroute.' + m) for m in ['window','marker','readout','observation','voyage','alerts','discord','desktop','outbox','archive','picker','monitor','commands','cli','settings','tray']]; print('all modules import')"
+        shell: pwsh
