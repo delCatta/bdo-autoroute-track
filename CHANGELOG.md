@@ -2,6 +2,39 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.3.1 (2026-09-01)
+
+Security fixes from a review of 0.3.0. Nothing here changes how the monitor
+behaves; it changes what leaves your machine.
+
+### Fixed
+
+- **The webhook token could reach the log file.** `requests` puts the URL it was
+  given into its exception messages, as a full URL on an HTTP error and as a
+  bare path on a connection error. A revoked webhook, a rate limit or a dropped
+  connection therefore wrote the live credential into `logs/autoroute.log` and
+  the console, which is the file CONTRIBUTING.md asks people to attach to an
+  issue. The DPAPI encryption was defeated at the one moment it mattered.
+  Both shapes are now scrubbed, in the log and in the settings dialog.
+- **The webhook host is checked when the config is loaded**, not only in the
+  settings window. Settings are re-read while the monitor runs, so anything able
+  to write `config.toml` could otherwise have redirected full-window screenshots
+  to another host with no restart and no prompt.
+- **The config editor no longer resolves `notepad.exe` against the working
+  directory.** Every `.cmd` sets that to the repo root, so a `notepad.exe`
+  dropped in the project folder would have been launched instead.
+- **A newline in a pasted value no longer breaks `config.toml`.** It wrote a file
+  that would not parse, and the failure was quiet, because a running monitor
+  keeps its old settings while the dialog falls back to defaults.
+- **Window titles are logged at debug rather than info.** They carry document
+  names and browser tabs, and that log gets attached to issues. Run with `-v`
+  to list them.
+- **The last toast screenshot is removed at exit** instead of being left in
+  `%TEMP%`.
+- `opencv-python` is declared. It only worked because the OCR engine happened to
+  pull it in, so the `tesseract` backend was one dependency change from failing.
+- The test workflow declares `permissions: contents: read`.
+
 ## 0.3.0 (2026-09-01)
 
 ### Added

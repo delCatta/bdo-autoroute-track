@@ -14,6 +14,7 @@ import requests
 from PIL import Image
 
 from .alerts import Alert
+from .vault import scrubbed
 
 log = logging.getLogger(__name__)
 
@@ -63,8 +64,12 @@ class Discord:
             response.raise_for_status()
             return True
         except requests.RequestException as exc:
-            log.warning("Discord notification failed: %s", exc)
+            log.warning("Discord notification failed: %s", self._safely(exc))
             return False
+
+    def _safely(self, exc: Exception) -> str:
+        """What went wrong, without the webhook token in it."""
+        return scrubbed(f"{exc.__class__.__name__}: {exc}", self.webhook_url)
 
     def _payload(self, alert: Alert) -> dict[str, object]:
         embed: dict[str, object] = {

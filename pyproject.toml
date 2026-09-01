@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bdo-autoroute-track"
-version = "0.3.0"
+version = "0.3.1"
 description = "Watch the Black Desert Online auto-route marker and get alerted on arrival, a stall, or a lost route."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -25,6 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "opencv-python>=4.9.0",
     "mss>=9.0.1",
     "Pillow>=10.2.0",
     "numpy>=1.26.0",

@@ -6,6 +6,7 @@ when you are at the machine, and as a second channel when Discord is down.
 
 from __future__ import annotations
 
+import atexit
 import logging
 import tempfile
 from pathlib import Path
@@ -36,6 +37,10 @@ class Desktop:
         self._toaster = WindowsToaster(app_name)
         self._icon = icon if icon and icon.exists() else None
         self._scratch = Path(tempfile.gettempdir()) / "bdo-autoroute-toast.png"
+        # Windows reads the file while the toast is on screen, so it cannot go
+        # straight after showing one. Clearing it at exit keeps the last game
+        # frame from sitting in %TEMP% after the monitor has stopped.
+        atexit.register(self._discard)
 
     def deliver(self, alert: Alert) -> bool:
         """Raise one toast. True on success; never raises."""
@@ -73,6 +78,7 @@ class Desktop:
 
         shot = alert.thumbnail(TOAST_IMAGE_WIDTH)
         if shot is None:
+            self._discard()
             return
         try:
             shot.convert("RGB").save(self._scratch, format="PNG")
@@ -83,3 +89,10 @@ class Desktop:
             )
         except Exception as exc:
             log.debug("Could not attach the screenshot: %s", exc)
+
+    def _discard(self) -> None:
+        """Drop the scratch image. Safe when it was never written."""
+        try:
+            self._scratch.unlink(missing_ok=True)
+        except OSError as exc:
+            log.debug("Could not remove %s: %s", self._scratch, exc)

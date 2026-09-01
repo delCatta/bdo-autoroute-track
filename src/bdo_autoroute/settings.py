@@ -24,6 +24,12 @@ CAPTURE_METHODS = ("window", "screen")
 SCREENSHOT_MODES = ("full", "marker", "none")
 NOTIFY_MODES = ("verbose", "important")
 
+# Every Discord webhook lives here. Checked on the config path as well as in
+# the settings window, because hot reload means anything that can write
+# config.toml could otherwise redirect full-window screenshots to another host
+# without a restart and without a prompt.
+WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
+
 # How much room to leave around the marker when cropping. Enough to see the
 # destination name and the surrounding water, not the chat panel.
 MARKER_CROP_MARGIN = 3.0
@@ -300,6 +306,11 @@ class Settings:
         if unknown:
             raise SettingsError(
                 f"Unknown notify.channels {unknown}; use 'discord' and/or 'desktop'."
+            )
+        if self.webhook_url and not self.webhook_url.startswith(WEBHOOK_PREFIX):
+            raise SettingsError(
+                "notify.discord_webhook_url does not look like a Discord "
+                f"webhook. They start with {WEBHOOK_PREFIX}"
             )
         for channel, mode in self.notification_modes.items():
             if mode not in NOTIFY_MODES:

@@ -8,18 +8,16 @@ away for the rest.
 from __future__ import annotations
 
 import logging
-import subprocess
+import os
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
 
 from .configfile import ConfigFile
-from .settings import CONFIG, EXAMPLE_CONFIG, SCREENSHOT_MODES, Settings
-from .vault import available, protected
+from .settings import CONFIG, EXAMPLE_CONFIG, SCREENSHOT_MODES, WEBHOOK_PREFIX, Settings
+from .vault import available, protected, scrubbed
 
 log = logging.getLogger(__name__)
-
-WEBHOOK_PREFIX = "https://discord.com/api/webhooks/"
 
 # What each notification mode is called in the dialog, and back again. The
 # config stores the short word; nobody should have to guess what "verbose" does.
@@ -41,9 +39,15 @@ def ensure_config(path: Path = CONFIG) -> Path:
 
 
 def open_in_editor(path: Path) -> None:
+    """Open the config in whatever the user has associated with .toml.
+
+    Not `Popen(["notepad.exe", ...])`. CreateProcess searches the working
+    directory first, and every `.ps1` here sets that to the repo root, so a
+    notepad.exe dropped in the project folder would have won.
+    """
     ensure_config(path)
     try:
-        subprocess.Popen(["notepad.exe", str(path)])
+        os.startfile(str(path))
     except Exception as exc:
         log.warning("Could not open %s: %s", path, exc)
 
@@ -264,7 +268,7 @@ class SettingsWindow:
         try:
             sent = Discord(webhook, self._mention.get().strip()).deliver(Alert.test_message())
         except Exception as exc:
-            messagebox.showerror("Test", f"Could not send: {exc}")
+            messagebox.showerror("Test", f"Could not send. {scrubbed(str(exc), webhook)}")
             return
 
         if sent:

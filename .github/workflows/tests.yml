@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Read-only. This workflow runs tests and needs nothing else, so a compromised
+# action cannot push, tag or comment.
+permissions:
+  contents: read
+
 jobs:
   pytest:
     # Windows-only by design: it reads the screen through Windows APIs.

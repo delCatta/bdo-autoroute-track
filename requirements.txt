@@ -1,4 +1,8 @@
 # Screen capture + imaging
+# opencv is what template-matches the marker. It arrives with rapidocr too,
+# but marker.py imports it directly, so the tesseract backend would break on
+# any dependency change that dropped it.
+opencv-python>=4.9.0
 mss>=9.0.1
 Pillow>=10.2.0
 numpy>=1.26.0

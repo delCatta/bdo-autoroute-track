@@ -63,9 +63,12 @@ def windows(settings: Settings, _args) -> int:
             len(by_title),
         )
 
-    log.info("All %d visible windows:", len(everything))
+    # Titles carry document names and browser tabs, and this log is the file
+    # CONTRIBUTING.md asks people to attach to an issue. The count is enough to
+    # explain an ambiguous match; the titles themselves need -v.
+    log.info("All %d visible windows (run with -v to list them).", len(everything))
     for hwnd, title in everything:
-        log.info("    hwnd=%-9d %-22s %r", hwnd, process_name(hwnd), title)
+        log.debug("    hwnd=%-9d %-22s %r", hwnd, process_name(hwnd), title)
     return 0 if by_process or by_title else 1
 
 

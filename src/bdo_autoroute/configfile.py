@@ -22,7 +22,18 @@ def as_toml(value: object) -> str:
         return str(value)
     if isinstance(value, (list, tuple)):
         return "[" + ", ".join(as_toml(item) for item in value) + "]"
-    text = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    text = (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        # A pasted value can carry a newline. Writing it raw produced a
+        # config.toml that no longer parsed, and the failure was quiet: hot
+        # reload keeps the stale settings and the dialog falls back to
+        # defaults, so the next save could reset unrelated values.
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+    )
     return f'"{text}"'
 
 

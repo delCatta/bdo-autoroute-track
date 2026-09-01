@@ -14,11 +14,17 @@ from __future__ import annotations
 
 import base64
 import logging
+import re
 
 log = logging.getLogger(__name__)
 
 PREFIX = "enc:"
 DESCRIPTION = "bdo-autoroute-track webhook"
+
+# The token is the last path segment of a webhook URL. Matched on the path
+# rather than the whole URL because a connection error reports the path alone,
+# with the host in a separate part of the message.
+WEBHOOK_TOKEN = re.compile(r"(/api/webhooks/\d+/)[\w.-]+")
 
 
 def available() -> bool:
@@ -67,6 +73,20 @@ def revealed(stored: str) -> str:
             exc,
         )
         return ""
+
+
+def scrubbed(text: str, *secrets: str) -> str:
+    """Text with any webhook token taken out, safe for a log or a dialog.
+
+    `requests` puts the URL it was given into its exception messages, both as a
+    full URL on an HTTP error and as a bare path on a connection error. Logging
+    one raw wrote the live credential into logs/autoroute.log, which is the file
+    CONTRIBUTING.md asks people to attach to an issue.
+    """
+    for secret in secrets:
+        if secret:
+            text = text.replace(secret, masked(secret))
+    return WEBHOOK_TOKEN.sub(r"\1(token)", text)
 
 
 def masked(secret: str) -> str:
