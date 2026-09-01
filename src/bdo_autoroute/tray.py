@@ -132,11 +132,6 @@ class Tray:
                     visible=lambda _item: self._monitor.outbox.has("desktop"),
                 ),
                 pystray.MenuItem(
-                    "Mute everything",
-                    self._toggle_mute,
-                    checked=lambda _item: self._monitor.outbox.muted,
-                ),
-                pystray.MenuItem(
                     "Pause watching",
                     self._toggle_pause,
                     checked=lambda _item: self._monitor.paused,
@@ -200,18 +195,6 @@ class Tray:
             self._refresh()
 
         return switch
-
-    def _toggle_mute(self, _icon=None, _item=None) -> None:
-        """Stop delivering alerts, while carrying on watching.
-
-        Muting is deliberate silence, so it must never be mistaken for a broken
-        channel - the Outbox returns early rather than recording a failure.
-        """
-        outbox = self._monitor.outbox
-        outbox.muted = not outbox.muted
-        log.info("Notifications %s.", "muted" if outbox.muted else "unmuted")
-        self._facts.muted = outbox.muted
-        self._refresh()
 
     def _toggle_pause(self, _icon=None, _item=None) -> None:
         """Stop polling entirely. Nothing is read, so nothing is missed either."""

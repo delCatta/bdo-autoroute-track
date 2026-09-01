@@ -94,31 +94,38 @@ class TestMute:
             self.received.append(alert)
             return True
 
-    def test_muting_stops_delivery(self):
+    def test_switching_every_channel_off_stops_delivery(self):
         channel = self.Channel()
         outbox = Outbox([channel])
-        outbox.muted = True
+        outbox.silence("desktop")
         assert not outbox.deliver(self.alert())
         assert channel.received == []
 
-    def test_unmuting_resumes_delivery(self):
+    def test_switching_one_back_on_resumes_delivery(self):
         channel = self.Channel()
         outbox = Outbox([channel])
-        outbox.muted = True
+        outbox.silence("desktop")
         outbox.deliver(self.alert())
-        outbox.muted = False
+        outbox.silence("desktop", False)
         assert outbox.deliver(self.alert())
         assert len(channel.received) == 1
 
-    def test_muting_is_never_counted_as_a_broken_channel(self, caplog):
+    def test_being_quiet_is_never_counted_as_a_broken_channel(self, caplog):
         outbox = Outbox([self.Channel()])
-        outbox.muted = True
+        outbox.silence("desktop")
         for _ in range(FAILURES_BEFORE_COMPLAINT + 2):
             outbox.deliver(self.alert())
         assert "in a row" not in caplog.text
         assert "reached nobody" not in caplog.text
 
-    def test_outbox_starts_unmuted(self):
+    def test_muted_means_every_channel_is_off(self):
+        outbox = Outbox([self.Channel()])
+        assert not outbox.muted
+        outbox.silence("desktop")
+        assert outbox.muted
+
+    def test_an_empty_outbox_is_not_muted(self):
+        """Nowhere to send is a different problem from choosing silence."""
         assert not Outbox([]).muted
 
 

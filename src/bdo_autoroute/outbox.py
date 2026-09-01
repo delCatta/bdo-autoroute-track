@@ -34,11 +34,15 @@ class Outbox:
         self._channels = channels
         self._failures: dict[str, int] = {}
         self._silenced: set[str] = set()
-        self.muted = False
 
     @property
     def names(self) -> list[str]:
         return [c.name for c in self._channels]
+
+    @property
+    def muted(self) -> bool:
+        """Every channel switched off. Derived, so there is one way to be quiet."""
+        return bool(self._channels) and all(self.silenced(c.name) for c in self._channels)
 
     def has(self, name: str) -> bool:
         """Whether a channel exists at all - Discord only does with a webhook."""
@@ -60,16 +64,16 @@ class Outbox:
         return not self._channels
 
     def deliver(self, alert: Alert) -> bool:
-        """Send to every channel. True if at least one accepted it.
+        """Send to every channel that is switched on. True if any accepted it.
 
-        Muting returns early, so a deliberate silence is never mistaken for a
-        broken channel.
+        A silenced channel is skipped before anything is counted, so choosing to
+        be quiet is never mistaken for a channel that has stopped working.
         """
-        if self.muted:
-            log.info("Muted, so %r was not sent.", alert.headline)
+        speaking = [c for c in self._channels if not self.silenced(c.name)]
+        if self._channels and not speaking:
+            log.info("Every channel is off, so %r was not sent.", alert.headline)
             return False
 
-        speaking = [c for c in self._channels if not self.silenced(c.name)]
         delivered = False
         for channel in speaking:
             if self._deliver_one(channel, alert):
