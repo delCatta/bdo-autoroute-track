@@ -1,0 +1,81 @@
+name: release
+
+# Attaches a named zip to the release for a tag, so the download button on the
+# release page is obvious. GitHub's own "Source code (zip)" is easy to miss if
+# you are not a developer, and most people arriving here are not.
+#
+# Order does not matter. Create the release first and this uploads to it, or
+# push the tag first and this creates the release and then uploads.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The existing tag to build a zip for
+        required: true
+
+# Needed to create the release and upload to it. Nothing else.
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by commit rather than tag. A tag can be moved; a commit cannot.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Work out the version
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "name=bdo-autoroute-track-${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Check the tag matches the version in the source
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          IN_SOURCE=$(grep -oP '__version__ = "\K[^"]+' src/bdo_autoroute/__init__.py)
+          if [ "${TAG#v}" != "$IN_SOURCE" ]; then
+            echo "Tag $TAG does not match __version__ $IN_SOURCE." >&2
+            echo "A zip labelled one version holding another is worse than no zip." >&2
+            exit 1
+          fi
+          echo "Tag and source agree on $IN_SOURCE."
+
+      - name: Build the zip
+        run: |
+          NAME="${{ steps.version.outputs.name }}"
+          mkdir -p "dist/$NAME"
+          cp -r src assets docs tests "dist/$NAME/"
+          cp *.cmd *.ps1 "dist/$NAME/"
+          cp config.example.toml requirements.txt requirements-dev.txt pyproject.toml "dist/$NAME/"
+          cp README.md LICENSE CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md "dist/$NAME/"
+          cp .github/START-HERE.txt "dist/$NAME/START HERE.txt"
+          # Nothing local should ever reach a release zip.
+          rm -f "dist/$NAME/config.toml" "dist/$NAME/calibration.json" "dist/$NAME/icon_template.png"
+          cd dist && zip -qr "$NAME.zip" "$NAME"
+          ls -la "$NAME.zip"
+
+      - name: Refuse to ship anything local
+        run: |
+          NAME="${{ steps.version.outputs.name }}"
+          if unzip -l "dist/$NAME.zip" | grep -Ei "config\.toml$|calibration\.json|icon_template\.png|autoroute\.log|samples/"; then
+            echo "Local state found in the zip." >&2
+            exit 1
+          fi
+          echo "Clean."
+
+      - name: Publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          NAME="${{ steps.version.outputs.name }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --notes "See [CHANGELOG.md](CHANGELOG.md)."
+          gh release upload "$TAG" "dist/$NAME.zip" --clobber

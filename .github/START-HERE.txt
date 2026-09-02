@@ -1,0 +1,62 @@
+BDO Autoroute Track
+===================
+
+Watches the auto-route marker and tells you when you arrive, stall, get stuck,
+or lose the route. Discord, a Windows notification, or both.
+
+
+THREE STEPS
+-----------
+
+  1. Double-click  setup.cmd
+       Installs what it needs. If you have no Python it offers to fetch one,
+       so just say yes. Takes a few minutes the first time, then opens a
+       settings window.
+
+  2. Double-click  calibrate.cmd
+       With Black Desert running on an active auto-route. You drag a box around
+       the distance number, then a box around the icon beside it. Once only.
+
+  3. Double-click  install-shortcut.cmd
+       Puts it on your Desktop. From then on, one double-click and look for the
+       boat in your notification area, bottom right.
+
+
+BEFORE YOU START
+----------------
+
+  * Windows 10 or 11.
+  * Black Desert in Borderless Windowed.
+  * The marker has to be visible on screen. Point the camera DOWN so the route
+    icon sits mid-screen, away from the quest tracker and the buff bar. A
+    full-screen panel like the world map hides it.
+
+  You do NOT need the game focused or in front. It reads the game's own window,
+  so you can use the PC while it watches.
+
+
+IF SOMETHING LOOKS WRONG
+------------------------
+
+  shot.cmd     takes one look and shows exactly what it read
+  settings.cmd where alerts go, the webhook, and the thresholds
+  scrub.cmd    builds a report you can safely attach to a GitHub issue
+
+  Use scrub.cmd rather than sending files yourself. It removes your webhook
+  token and every window title, and it never includes a whole screenshot of
+  your game. Your guild chat and character name stay on your machine.
+
+
+A NOTE ON WHAT THIS IS
+----------------------
+
+  It takes screenshots of a window, the same way OBS does. It never reads the
+  game's memory, never injects anything, and never sends a keystroke or a click.
+  It watches and tells you things. It does not play for you.
+
+  That said, no third-party tool is officially sanctioned by Pearl Abyss, and
+  you use this at your own risk. If that is not acceptable to you, do not run it.
+
+
+  Source, issues and the full docs:
+  https://github.com/delCatta/bdo-autoroute-track

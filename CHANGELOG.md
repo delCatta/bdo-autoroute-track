@@ -2,6 +2,32 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.6 (2026-09-02)
+
+### Added
+
+- **Releases carry a real download.** Until now the only asset was GitHub's
+  automatic "Source code (zip)", which is easy to miss if you are not a
+  developer, and most people arriving here are not. CI now attaches a named zip
+  with a `START HERE.txt` at the top of it, and refuses to build one whose tag
+  disagrees with the version in the source.
+
+### Changed
+
+- **`setup.cmd` offers to install Python for you.** It used to detect a missing
+  or unsupported Python, print a `winget` command, and stop. That was the step
+  where most people gave up. It now asks, installs 3.12 if you say yes, and
+  finds it afterwards by looking where the installer puts it rather than
+  trusting a `PATH` that a running window cannot see updated.
+- **Python is located by version rather than by name.** `py -3.12` is preferred
+  over whatever `python` happens to point at, so a machine with 3.13 installed
+  alongside a supported version now works instead of failing at pip.
+
+### Fixed
+
+- The test workflow's actions are pinned by commit rather than by tag. A tag can
+  be moved to a different commit; a commit cannot.
+
 ## 0.4.5 (2026-09-02)
 
 ### Changed
