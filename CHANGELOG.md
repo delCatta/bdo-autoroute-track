@@ -2,6 +2,16 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.4.5 (2026-09-02)
+
+### Changed
+
+- **The Desktop shortcut starts the tray now**, not a console window. The tray
+  came later than the shortcut did and the installer was never updated, so a
+  new user got a PowerShell window scrolling poll lines and no icon, no
+  settings, and no Quit. `install-shortcut.cmd -Console` still installs the old
+  one, which is the right choice while chasing a problem.
+
 ## 0.4.4 (2026-09-01)
 
 ### Fixed

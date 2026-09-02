@@ -81,10 +81,13 @@ too. **Saved changes apply to a running monitor straight away**, from the tray,
 from `settings.cmd`, or from editing `config.toml` in an editor. Nothing needs
 restarting.
 
+`install-shortcut.cmd` puts it on your Desktop, starting the tray with no window
+in the way. Add `-Console` if you would rather have the poll log scrolling past,
+which is what you want when something is wrong.
+
 Other commands: `run.cmd` (same monitor, in a console), `run.cmd --log` (record
 this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,
-`scrub.cmd` (a report safe to attach to an issue), `settings.cmd`,
-`install-shortcut.cmd`.
+`scrub.cmd` (a report safe to attach to an issue), `settings.cmd`.
 
 ## Before you point it at a shared server
 
