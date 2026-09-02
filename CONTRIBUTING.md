@@ -75,11 +75,21 @@ cd bdo-autoroute-track
 ```
 
 Needs Windows and Python 3.11 or 3.12, not 3.13, which the OCR engine has no
-wheel for. `setup.cmd` checks this for you.
+wheel for. `setup.cmd` checks this and offers to install one with winget.
 
-`python -m bdo_autoroute` opens the window on the checkout's own config and
-calibration. `.\build-exe.cmd` builds the same installer CI attaches to a
-release, into `dist\`. It needs Inno Setup and offers to install it with winget.
+Use the `.cmd` files, not the `.ps1` ones. Windows ships PowerShell's execution
+policy as `Restricted`, so `.\setup.ps1` fails with "running scripts is
+disabled on this system". Each `.cmd` runs its `.ps1` with a one-shot bypass and
+changes nothing about your system.
+
+From a checkout, `tray.cmd` gives you the icon alone, `run.cmd` the same monitor
+in a console with the poll log scrolling past, and `python -m bdo_autoroute`
+the window, all on the checkout's own config and calibration. Also there:
+`calibrate.cmd`, `settings.cmd`, `shot.cmd` (one look at what it reads),
+`test-notify.cmd`, `scrub.cmd`, `install-shortcut.cmd` (a Desktop shortcut to
+the tray), and `build-exe.cmd`, which builds the same installer CI attaches to a
+release, into `dist\`. That last one needs Inno Setup and offers to install it
+with winget.
 
 ## Before opening a pull request
 
