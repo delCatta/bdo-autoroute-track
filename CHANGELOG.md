@@ -2,6 +2,52 @@
 
 Notable changes. Dates are when the work landed, not when it was released.
 
+## 0.5.0 (2026-09-02)
+
+The release for people who do not want to know what Python is.
+
+### Added
+
+- **An installer.** Every release now carries
+  `BDO-Autoroute-Track-Setup-<version>.exe`. Run it and the program opens. No
+  Python, no PowerShell, no zip to extract, and no console window anywhere. It
+  installs for the current user, so there is no admin prompt, and it keeps the
+  config, calibration and logs under `%LOCALAPPDATA%\BDO Autoroute Track`, where
+  an update or an uninstall leaves them alone. The installer is not signed yet,
+  so SmartScreen warns once. The source zip is still attached for anyone who
+  would rather read it.
+- **A window.** Double-clicking the program opens one, dark like the game and
+  like Discord. On a fresh install it is a two-step checklist, Settings and
+  Calibrate, each with a button. After that it shows the status the tray
+  tooltip carries, large enough to read from across the room, with the pause
+  and per-channel switches from the tray menu. Closing it hides it. The tray
+  keeps watching, and a double-click on the icon brings the window back.
+- `build-exe.cmd` builds the folder and the installer locally. CI does the same
+  on every tag and attaches the result with a SHA256 beside it.
+
+### Changed
+
+- **Settings is dark now**, and it says what it is doing in the window instead
+  of popping message boxes. Test no longer freezes the dialog while Discord
+  answers.
+- The calibration picker matches. Same drag, same keys.
+- Running the program with no arguments opens the window. `tray.cmd` still
+  gives you the icon alone, and `run.cmd` the console.
+- A run without a console always writes `logs/autoroute.log`, because there is
+  no other record of what happened.
+- The example config and the assets are read from wherever the program was
+  installed, and everything the program writes goes to the user folder. From a
+  source checkout both are still the repo, as before.
+
+### Fixed
+
+- **Windows notifications sent from under the window failed silently.** The
+  toaster was made when the settings were loaded, on the window's thread, and
+  used from the poll loop on another. Windows refused with a COM threading
+  error, the toast never appeared, and only the log knew. Found on the first
+  run of the installed exe. The toaster is now made on the thread that
+  delivers.
+
 ## 0.4.6 (2026-09-02)
 
 ### Added

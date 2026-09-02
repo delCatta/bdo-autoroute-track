@@ -1,8 +1,9 @@
 name: release
 
-# Attaches a named zip to the release for a tag, so the download button on the
-# release page is obvious. GitHub's own "Source code (zip)" is easy to miss if
-# you are not a developer, and most people arriving here are not.
+# Attaches two things to the release for a tag: the Setup.exe most people
+# want, and a named source zip for anyone who would rather read it. GitHub's
+# own "Source code (zip)" is easy to miss if you are not a developer, and most
+# people arriving here are not.
 #
 # Order does not matter. Create the release first and this uploads to it, or
 # push the tag first and this creates the release and then uploads.
@@ -79,3 +80,60 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --notes "See [CHANGELOG.md](CHANGELOG.md)."
           gh release upload "$TAG" "dist/$NAME.zip" --clobber
+
+  installer:
+    # The Setup.exe. Built on Windows because PyInstaller bundles the Python
+    # it runs on, and Inno Setup only runs there anyway.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Work out the version
+        id: version
+        shell: bash
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          IN_SOURCE=$(grep -oP '__version__ = "\K[^"]+' src/bdo_autoroute/__init__.py)
+          if [ "${TAG#v}" != "$IN_SOURCE" ]; then
+            echo "Tag $TAG does not match __version__ $IN_SOURCE." >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$IN_SOURCE" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python.exe -m pip install --upgrade pip
+          .venv\Scripts\python.exe -m pip install -r requirements.txt pyinstaller
+
+      - name: Build the folder and the installer
+        # The runner image ships Inno Setup, so the script finds ISCC.exe
+        # without installing anything.
+        run: .\build-exe.ps1
+        shell: pwsh
+
+      - name: Refuse to ship anything local
+        shell: pwsh
+        run: |
+          $leaks = Get-ChildItem "dist\BDO Autoroute Track" -Recurse -Include config.toml, calibration.json, icon_template.png, autoroute.log
+          if ($leaks) { $leaks | ForEach-Object { Write-Host $_.FullName }; exit 1 }
+          Write-Host "Clean."
+
+      - name: Publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --notes "See [CHANGELOG.md](CHANGELOG.md)."
+          gh release upload "$TAG" "dist/BDO-Autoroute-Track-Setup-$VERSION.exe" "dist/BDO-Autoroute-Track-Setup-$VERSION.exe.sha256" --clobber

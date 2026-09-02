@@ -35,9 +35,10 @@ body:
     attributes:
       label: The report
       description: |
-        Run `.\scrub.cmd`. It writes one zip into `reports\` holding the log
-        with every webhook token and window title removed, the digit crops, and
-        your calibration. It leaves out `config.toml`, whole window frames and
+        Press **Report** in the window (or run `.\scrub.cmd` from a source
+        checkout). It writes one zip into `reports\` holding the log with every
+        webhook token and window title removed, the digit crops, and your
+        calibration. It leaves out `config.toml`, whole window frames and
         window titles.
 
         **Please do not attach `logs\autoroute.log` or `samples\` by hand.**
@@ -45,7 +46,7 @@ body:
         `samples\no_marker\` holds whole window frames with guild chat, your
         character name and the marketplace in them.
       options:
-        - label: I ran `.\scrub.cmd` and attached the zip from `reports\`
+        - label: I pressed Report (or ran `.\scrub.cmd`) and attached the zip from `reports\`
           required: false
         - label: I opened the zip and I am happy for it to be public
           required: true

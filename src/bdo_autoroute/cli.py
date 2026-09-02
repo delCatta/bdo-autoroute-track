@@ -18,10 +18,14 @@ log = logging.getLogger("bdo_autoroute")
 LOGS = ROOT / "logs"
 LOG_FILE = LOGS / "autoroute.log"
 
+# What a double-click on the exe runs. No arguments means the window.
+DEFAULT_COMMAND = "app"
+
 # These run before, or instead of, a working config.
-CONFIGLESS = {"settings", "protect"}
+CONFIGLESS = {"app", "settings", "protect"}
 
 COMMANDS = {
+    "app": commands.app,
     "calibrate": commands.calibrate,
     "run": commands.run,
     "tray": commands.tray,
@@ -66,6 +70,9 @@ def parser() -> argparse.ArgumentParser:
     )
     subcommands = parsed.add_subparsers(dest="command", required=True)
 
+    subcommands.add_parser(
+        "app", parents=[common], help="open the window, which is what a double-click does"
+    )
     subcommands.add_parser("calibrate", parents=[common], help="box the digits and the icon")
     running = subcommands.add_parser("run", parents=[common], help="start watching")
     running.add_argument("--once", action="store_true", help="poll a single time and exit")
@@ -85,13 +92,36 @@ def parser() -> argparse.ArgumentParser:
     return parsed
 
 
+def has_console() -> bool:
+    """Whether anything would see a line written to stderr.
+
+    The packaged exe is a windowed program, so Python gives it no stderr at
+    all. A StreamHandler pointed at None fails on the first message.
+    """
+    return sys.stderr is not None
+
+
+def arguments(argv: list[str]) -> list[str]:
+    """What was asked for, or the window when nothing was."""
+    return argv or [DEFAULT_COMMAND]
+
+
 def start_logging(verbose: bool) -> None:
-    """Console output, which every run gets."""
+    """Console output when there is a console. A file otherwise, always.
+
+    Without a console the log file is the only record of what happened, so a
+    windowed run keeps one whether or not the config asks for it.
+    """
     root = logging.getLogger()
     root.setLevel(logging.DEBUG if verbose else logging.INFO)
-    console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter("%(asctime)s  %(levelname)-7s %(message)s", "%H:%M:%S"))
-    root.addHandler(console)
+    if has_console():
+        console = logging.StreamHandler()
+        console.setFormatter(
+            logging.Formatter("%(asctime)s  %(levelname)-7s %(message)s", "%H:%M:%S")
+        )
+        root.addHandler(console)
+    else:
+        file_logging(Settings(), forced=True)
 
 
 def file_logging(settings: Settings, *, forced: bool = False) -> None:
@@ -103,7 +133,7 @@ def file_logging(settings: Settings, *, forced: bool = False) -> None:
     """
     root = logging.getLogger()
     existing = [h for h in root.handlers if isinstance(h, RotatingFileHandler)]
-    wanted = settings.log_to_file or forced
+    wanted = settings.log_to_file or forced or not has_console()
 
     if not wanted:
         for handler in existing:
@@ -133,7 +163,7 @@ def file_logging(settings: Settings, *, forced: bool = False) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parser().parse_args(argv)
+    args = parser().parse_args(arguments(sys.argv[1:] if argv is None else argv))
     start_logging(getattr(args, "verbose", False))
     try:
         if args.command in CONFIGLESS:

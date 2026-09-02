@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import threading
 import webbrowser
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -93,9 +94,21 @@ class Tray:
 
     Signals are the main thread's business, so the monitor is asked not to
     install a handler and is stopped through halt() from the menu instead.
+
+    On its own it is the whole interface, which `run()` gives you. Under the
+    window it is the part that stays when the window is closed, and the three
+    callbacks hand the window its cues.
     """
 
-    def __init__(self, monitor: Monitor, *, icon: Path | None = None, logs: Path | None = None):
+    def __init__(
+        self,
+        monitor: Monitor,
+        *,
+        logs: Path | None = None,
+        on_open: Callable[[], None] | None = None,
+        on_settings: Callable[[], None] | None = None,
+        on_quit: Callable[[], None] | None = None,
+    ):
         try:
             import pystray
         except ImportError as exc:
@@ -107,33 +120,42 @@ class Tray:
         self._pystray = pystray
         self._monitor = monitor
         self._logs = logs
+        self._on_open = on_open
+        self._on_settings = on_settings
+        self._on_quit = on_quit
         self._worker: threading.Thread | None = None
         self._icons = every_state()
         self._facts = Facts()
         self._icon = pystray.Icon(
-            "bdo_autoroute",
-            self._image(icon),
-            TITLE,
-            menu=pystray.Menu(
-                pystray.MenuItem(lambda _item: self._facts.headline, None, enabled=False),
-                pystray.MenuItem(lambda _item: self._facts.distance, None, enabled=False),
-                pystray.MenuItem(lambda _item: self._facts.timing, None, enabled=False),
-                pystray.MenuItem(lambda _item: self._facts.delivery, None, enabled=False),
-                pystray.Menu.SEPARATOR,
-                self._channel_menu("Discord alerts", "discord"),
-                self._channel_menu("Windows notifications", "desktop"),
-                pystray.MenuItem(
-                    "Pause watching",
-                    self._toggle_pause,
-                    checked=lambda _item: self._monitor.paused,
-                ),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem("Settings...", self._settings),
-                pystray.MenuItem("Open logs folder", self._open_logs),
-                pystray.MenuItem("Quit", self._quit),
-            ),
+            "bdo_autoroute", self._icons[(State.STARTING, False)], TITLE, menu=self._menu()
         )
         monitor.watch(self._remember)
+
+    def _menu(self):
+        pystray = self._pystray
+        opening = []
+        if self._on_open is not None:
+            # default=True makes a double-click on the icon do this.
+            opening = [pystray.MenuItem("Open", self._open, default=True), pystray.Menu.SEPARATOR]
+        return pystray.Menu(
+            *opening,
+            pystray.MenuItem(lambda _item: self._facts.headline, None, enabled=False),
+            pystray.MenuItem(lambda _item: self._facts.distance, None, enabled=False),
+            pystray.MenuItem(lambda _item: self._facts.timing, None, enabled=False),
+            pystray.MenuItem(lambda _item: self._facts.delivery, None, enabled=False),
+            pystray.Menu.SEPARATOR,
+            self._channel_menu("Discord alerts", "discord"),
+            self._channel_menu("Windows notifications", "desktop"),
+            pystray.MenuItem(
+                "Pause watching",
+                self._toggle_pause,
+                checked=lambda _item: self._monitor.paused,
+            ),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Settings...", self._settings),
+            pystray.MenuItem("Open logs folder", self._open_logs),
+            pystray.MenuItem("Quit", self._quit),
+        )
 
     def run(self) -> int:
         """Block on the tray icon while the monitor polls behind it."""
@@ -144,6 +166,23 @@ class Tray:
         log.info("Tray running. Right-click the icon to quit.")
         self._icon.run()
         return 0
+
+    def start(self) -> None:
+        """Show the icon on a thread of its own. The caller runs the monitor."""
+        self._icon.run_detached()
+
+    def stop(self) -> None:
+        self._icon.stop()
+
+    def sync(self) -> None:
+        """Catch the menu up with a change made somewhere else, like the window."""
+        self._note_delivery()
+        self._facts.paused = self._monitor.paused
+        self._refresh()
+
+    def _open(self, _icon=None, _item=None) -> None:
+        if self._on_open is not None:
+            self._on_open()
 
     def _remember(self, status: Status) -> None:
         """Take in one poll. Called after every one."""
@@ -262,11 +301,16 @@ class Tray:
         self._facts.muted = outbox.muted
 
     def _settings(self, _icon=None, _item=None) -> None:
-        """Open the settings window on its own thread.
+        """Open the settings window.
 
-        Tk insists on owning whichever thread it runs on, and this one belongs
-        to pystray.
+        The window, when there is one, owns Tk and opens the dialog itself.
+        Alone, the dialog gets a thread of its own, because Tk insists on
+        owning whichever thread it runs on and this one belongs to pystray.
         """
+        if self._on_settings is not None:
+            self._on_settings()
+            return
+
         def show() -> None:
             # The import belongs inside the try. It sat outside once, and when
             # it failed the thread died with nothing logged and no window, which
@@ -316,6 +360,5 @@ class Tray:
             self._worker.join(timeout=5)
             if self._worker.is_alive():
                 log.warning("The monitor did not stop in time; exiting anyway.")
-
-    def _image(self, _icon: Path | None) -> Image.Image:
-        return self._icons[(State.STARTING, False)]
+        if self._on_quit is not None:
+            self._on_quit()

@@ -50,5 +50,5 @@ jobs:
       - name: Check every module imports
         run: |
           $env:PYTHONPATH = "src"
-          python -c "import importlib; [importlib.import_module('bdo_autoroute.' + m) for m in ['window','marker','readout','observation','voyage','alerts','discord','desktop','outbox','archive','picker','monitor','commands','cli','settings','tray']]; print('all modules import')"
+          python -c "import importlib; [importlib.import_module('bdo_autoroute.' + m) for m in ['window','marker','readout','observation','voyage','alerts','discord','desktop','outbox','archive','picker','monitor','commands','cli','settings','tray','ui','configure','app']]; print('all modules import')"
         shell: pwsh

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -17,9 +19,41 @@ from .vault import revealed
 
 log = logging.getLogger(__name__)
 
-ROOT = Path(__file__).resolve().parents[2]
+APP_NAME = "BDO Autoroute Track"
+
+
+def frozen() -> bool:
+    """Running as the packaged exe rather than from a source checkout."""
+    return bool(getattr(sys, "frozen", False))
+
+
+def home() -> Path:
+    """Where this person's own files live: config, calibration, logs, samples.
+
+    A source checkout keeps them beside the code. The packaged exe cannot,
+    because it installs into a folder that is replaced wholesale on every
+    update, so they go under %LOCALAPPDATA% like any other application's.
+    """
+    if not frozen():
+        return Path(__file__).resolve().parents[2]
+    base = os.environ.get("LOCALAPPDATA")
+    root = (Path(base) if base else Path.home() / "AppData" / "Local") / APP_NAME
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def bundle() -> Path:
+    """Where the read-only files shipped with the program live."""
+    if not frozen():
+        return Path(__file__).resolve().parents[2]
+    return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+
+
+ROOT = home()
+BUNDLE = bundle()
+ASSETS = BUNDLE / "assets"
 CONFIG = ROOT / "config.toml"
-EXAMPLE_CONFIG = ROOT / "config.example.toml"
+EXAMPLE_CONFIG = BUNDLE / "config.example.toml"
 CALIBRATION = ROOT / "calibration.json"
 ICON = ROOT / "icon_template.png"
 

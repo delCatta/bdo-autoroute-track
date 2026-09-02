@@ -11,33 +11,44 @@ import tkinter as tk
 
 from PIL import Image, ImageTk
 
+from . import ui
 from .marker import Box
 
 DIGITS_PROMPT = (
-    "STEP 1 of 2. Drag a box around the DISTANCE DIGITS only.\n"
-    "Just the number, for example 600 or 3970. Leave the icon out.\n"
-    "Enter or double-click to accept  |  R to redraw  |  Esc to cancel"
+    "Step 1 of 2. Drag a box around the distance digits only.\n"
+    "Just the number, for example 600 or 3970. Leave the icon out."
 )
 
 ICON_PROMPT = (
-    "STEP 2 of 2. Now drag a box around the ICON beside the number.\n"
-    "Box it tightly: this picture is used to find the marker as it moves.\n"
-    "Enter or double-click to accept  |  R to redraw  |  Esc to cancel"
+    "Step 2 of 2. Now drag a box around the icon beside the number.\n"
+    "Box it tightly. This picture is what finds the marker as it moves."
 )
 
+KEYS = "Enter or double-click to accept   |   R to redraw   |   Esc to cancel"
+
 MINIMUM_BOX_PX = 4
+OUTLINE = "#00ff88"
 
 
 class Picker:
-    """One modal drag over a frame, returning the box in full-resolution pixels."""
+    """One modal drag over a frame, returning the box in full-resolution pixels.
 
-    def __init__(self, frame: Image.Image, prompt: str) -> None:
+    Owns a window of its own when there is no parent, which is how the
+    command line calls it. Given a parent, it opens on top of that window and
+    hands control back when it closes.
+    """
+
+    def __init__(self, frame: Image.Image, prompt: str, *, parent=None) -> None:
         self._selection: Box | None = None
         self._start: tuple[int, int] | None = None
         self._rectangle: int | None = None
+        self._parent = parent
 
-        self._root = tk.Tk()
-        self._root.title("BDO Autoroute Track calibration")
+        self._root = tk.Toplevel(parent) if parent is not None else tk.Tk()
+        self._root.title("Calibration")
+        self._root.configure(bg=ui.WINDOW)
+        self._root.resizable(False, False)
+        ui.brand(self._root)
 
         available_width = self._root.winfo_screenwidth() - 80
         available_height = self._root.winfo_screenheight() - 220
@@ -45,21 +56,63 @@ class Picker:
         width = max(1, int(frame.width * self._scale))
         height = max(1, int(frame.height * self._scale))
 
-        tk.Label(self._root, text=prompt, justify="left", padx=10, pady=8, anchor="w").pack(
-            fill="x"
+        tk.Label(
+            self._root,
+            text=prompt,
+            justify="left",
+            anchor="w",
+            padx=14,
+            pady=10,
+            bg=ui.WINDOW,
+            fg=ui.TEXT,
+            font=(ui.FAMILY, 12, "bold"),
+        ).pack(fill="x")
+        self._canvas = tk.Canvas(
+            self._root,
+            width=width,
+            height=height,
+            cursor="crosshair",
+            highlightthickness=0,
+            bg=ui.WINDOW,
         )
-        self._canvas = tk.Canvas(self._root, width=width, height=height, cursor="crosshair")
         self._canvas.pack()
         self._photo = ImageTk.PhotoImage(frame.resize((width, height), Image.LANCZOS))
         self._canvas.create_image(0, 0, anchor="nw", image=self._photo)
 
-        self._status = tk.Label(self._root, text="No selection yet.", padx=10, pady=6, anchor="w")
+        self._status = tk.Label(
+            self._root,
+            text="No selection yet.",
+            anchor="w",
+            padx=14,
+            pady=8,
+            bg=ui.WINDOW,
+            fg=ui.MUTED,
+            font=(ui.FAMILY, 11),
+        )
         self._status.pack(fill="x")
+        tk.Label(
+            self._root,
+            text=KEYS,
+            anchor="w",
+            padx=14,
+            pady=6,
+            bg=ui.CARD,
+            fg=ui.MUTED,
+            font=(ui.FAMILY, 10),
+        ).pack(fill="x")
 
         self._bind()
+        if parent is not None:
+            self._root.transient(parent)
+            self._root.grab_set()
+        self._root.lift()
+        self._root.focus_force()
 
     def box(self) -> Box | None:
-        self._root.mainloop()
+        if self._parent is not None:
+            self._parent.wait_window(self._root)
+        else:
+            self._root.mainloop()
         return self._selection
 
     def _bind(self) -> None:
@@ -82,7 +135,7 @@ class Picker:
         if self._rectangle is not None:
             self._canvas.delete(self._rectangle)
         self._rectangle = self._canvas.create_rectangle(
-            *self._start, event.x, event.y, outline="#00ff88", width=2
+            *self._start, event.x, event.y, outline=OUTLINE, width=2
         )
 
     def _release(self, event) -> None:
@@ -125,12 +178,12 @@ class Picker:
         self._root.destroy()
 
 
-def digits_and_icon(frame: Image.Image) -> tuple[Box, Box] | None:
+def digits_and_icon(frame: Image.Image, *, parent=None) -> tuple[Box, Box] | None:
     """Ask for both boxes. None when cancelled."""
-    digits = Picker(frame, DIGITS_PROMPT).box()
+    digits = Picker(frame, DIGITS_PROMPT, parent=parent).box()
     if digits is None:
         return None
-    icon = Picker(frame, ICON_PROMPT).box()
+    icon = Picker(frame, ICON_PROMPT, parent=parent).box()
     if icon is None:
         return None
     return digits, icon

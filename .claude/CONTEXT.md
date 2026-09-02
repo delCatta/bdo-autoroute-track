@@ -63,12 +63,14 @@ src/bdo_autoroute/
   archive.py      Archive, expire
   vault.py        DPAPI protection for the webhook
   configfile.py   Comment-preserving edits to config.toml
-  configure.py    The settings window
+  ui.py           The palette, the fonts, and Mailbox (any thread to the Tk one)
+  configure.py    SettingsWindow
+  app.py          App, Checklist - the window
   icons.py        Tray icons, drawn per state
   picker.py       Picker - the two calibration boxes
   tray.py         Tray, Facts
   monitor.py      Monitor - the polling loop
-  commands.py     one function per CLI verb
+  commands.py     one function per CLI verb, plus Fit for a fresh calibration
   cli.py          parsing and dispatch
 ```
 
@@ -78,6 +80,35 @@ Flow per poll: `Window.matching` → `Capture.frame` → `Marker.sighting` →
 
 **Stall** lives on `Progress`, which tracks the best distance reached and when.
 Jitter and drift never masquerade as movement.
+
+### Threads under the window
+
+`App` owns the main thread, because Tk insists on it. The tray runs detached
+on pystray's thread, and the monitor polls on a worker. Anything either of them
+wants shown goes through `ui.Mailbox`, a queue the main thread drains every
+100ms. Never touch a widget from the monitor or from a menu callback. The pure
+`tray` command still runs the old way, pystray on the main thread and the
+settings dialog on a thread of its own.
+
+### Two places files live
+
+`settings.home()` is where the program writes (config, calibration, logs,
+samples) and `settings.bundle()` where it reads what shipped (assets, the
+example config). From a checkout both are the repo root. From the installed exe
+(`sys.frozen`) home is `%LOCALAPPDATA%\BDO Autoroute Track` and bundle is the
+`_internal` folder beside the exe. Every path constant derives from those two,
+so nothing else in the code knows the difference.
+
+The exe is a PyInstaller `onedir` build (`packaging/app.spec`) wrapped by Inno
+Setup (`packaging/installer.iss`). Measured on 2026-09-02: 246MB on disk, 104MB
+as a download, OCR reads a real sample correctly from the frozen build, and
+Defender with real-time protection on found nothing to say about it. `onefile`
+was rejected because it unpacks all of that into `%TEMP%` on every launch.
+
+customtkinter makes the process DPI-aware, which the tray-only run never was.
+Window capture is unaffected, since it reads the game's own buffer, and screen
+capture should if anything be more correct, since mss works in physical pixels.
+Not yet verified on a display scaled above 100%.
 
 ## 5. Bugs found by running against the real game
 
@@ -180,6 +211,18 @@ nothing sent, because nothing was generated. A negative figure now rebases
 instead of blocking.
 -> `tests/test_heartbeat_rebase.py`
 
+**#16. Windows toasts failed silently under the window.** `Desktop.__init__`
+made its `WindowsToaster` when the outbox was built, which the window does on
+Tk's thread, and `deliver` ran on the poll worker. WinRT objects belong to the
+apartment that made them, so Windows answered "The application called an
+interface that was marshalled for a different thread" and the toast never
+appeared. The first alert from the first run of the installed exe hit it.
+The tray-only run had never shown it because pystray built and used the outbox
+on the same thread. The toaster is now made per thread, on first delivery.
+Reproduced outside the app with `tkinter.Tk()` on the main thread and a
+delivery from a worker; it fails before the fix and delivers after.
+-> `tests/test_toast_thread.py`
+
 ## 6. Verified against the live game
 
 - `STUCK` at 3m 5s of stall on a route held at 3580m (2026-09-01 10:48:46),
@@ -214,14 +257,19 @@ A working development calibration was `digits_offset [-86, 0, 83, 14]` with a
 17×16 icon at 3440×1440 under **window** capture. That is a sanity reference,
 not a default.
 
+Installed from the exe, all of it lives under `%LOCALAPPDATA%\BDO Autoroute
+Track` instead, and the uninstaller leaves that folder alone on purpose. See
+"Two places files live" in section 4.
+
 ⚠️ Before committing, confirm `git status` does not list `config.toml`.
 
 ## 8. Ideas
 
 - Fix the leading-digit misread using `samples/` as evidence
 - Log voyages to SQLite to find which routes actually snag
-- A PyInstaller `.exe` so Python is not required. Dependencies weigh 308MB
-  (`cv2` alone is 113MB), so expect ~200MB
+- Sign the installer. SignPath is free for open source and Azure Trusted
+  Signing is cheap. Until then SmartScreen warns on every fresh download, and
+  the README tells people what to click
 - Multiple game clients, because `Window.matching` takes the first match
 
 ## 9. The constraint

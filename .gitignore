@@ -25,3 +25,7 @@ icon_template.png
 
 # Diagnostic bundles built by `scrub`. Local, and regenerated on demand.
 reports/
+
+# Build output from build-exe.cmd
+build/
+dist/

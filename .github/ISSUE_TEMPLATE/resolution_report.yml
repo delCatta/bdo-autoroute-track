@@ -70,8 +70,8 @@ body:
     attributes:
       label: Anything else
       description: |
-        If it went badly, `.\scrub.cmd` writes a zip in `reports\` that is safe
-        to attach. It leaves out `config.toml`, whole window frames and window
-        titles.
+        If it went badly, **Report** in the window (or `.\scrub.cmd` from a
+        checkout) writes a zip in `reports\` that is safe to attach. It leaves
+        out `config.toml`, whole window frames and window titles.
     validations:
       required: false

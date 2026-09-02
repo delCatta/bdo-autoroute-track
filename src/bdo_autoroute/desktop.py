@@ -9,6 +9,7 @@ from __future__ import annotations
 import atexit
 import logging
 import tempfile
+import threading
 from pathlib import Path
 
 from .alerts import Alert
@@ -50,7 +51,15 @@ class Desktop:
                 "notify.channels."
             ) from exc
 
-        self._toaster = WindowsToaster(app_name)
+        self._app_name = app_name
+        self._new_toaster = WindowsToaster
+        # One toaster per thread, made on first use. WinRT objects belong to
+        # the thread that made them. The window builds the outbox on Tk's
+        # thread and the poll loop delivers from a worker, and a toaster made
+        # on one and shown from the other failed with "marshalled for a
+        # different thread" and delivered nothing. The tray alone never showed
+        # it, because there the two happened to be the same thread.
+        self._local = threading.local()
         self._icon = icon if icon and icon.exists() else None
         self._scratch = SCRATCH_IMAGE
 
@@ -65,11 +74,18 @@ class Desktop:
             # nothing a person could act on.
             toast.text_fields = [alert.headline, alert.body, alert.footnote]
             self._attach_images(toast, alert)
-            self._toaster.show_toast(toast)
+            self._toaster().show_toast(toast)
             return True
         except Exception as exc:
             log.warning("Desktop notification failed: %s", exc)
             return False
+
+    def _toaster(self):
+        """This thread's toaster, made the first time this thread asks."""
+        toaster = getattr(self._local, "toaster", None)
+        if toaster is None:
+            toaster = self._local.toaster = self._new_toaster(self._app_name)
+        return toaster
 
     def _attach_images(self, toast, alert: Alert) -> None:
         """Best effort: a toast without pictures still tells you what happened."""

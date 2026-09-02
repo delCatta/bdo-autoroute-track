@@ -7,6 +7,7 @@ worth more than a few lines belongs on an object instead.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -15,14 +16,14 @@ from PIL import Image, ImageDraw
 from .alerts import Alert
 from .desktop import Desktop
 from .discord import Discord
-from .outbox import Outbox
-from .marker import Marker, Sighting
+from .marker import Box, Marker, MarkerError, Sighting
 from .monitor import Monitor, build_marker, build_readout, build_voyage
 from .observation import Observation
+from .outbox import Outbox
 from .picker import digits_and_icon
-from .readout import Readout
-from .settings import CONFIG, ICON, ROOT, Calibration, Settings, SettingsError
-from .window import Window, blank, capture_for, process_name
+from .readout import Reading, Readout
+from .settings import ASSETS, CONFIG, ICON, ROOT, Calibration, Settings, SettingsError
+from .window import CaptureError, Window, blank, capture_for, process_name
 
 log = logging.getLogger("bdo_autoroute")
 
@@ -30,11 +31,72 @@ CAPTURES = ROOT / "captures"
 LOGS = ROOT / "logs"
 DEBUG = ROOT / "debug"
 SAMPLES = ROOT / "samples"
+TRAY_ICON = ASSETS / "boat.ico"
 
 
 def frame_of(window: Window, method: str) -> Image.Image:
     with capture_for(method) as capture:
         return capture.frame(window)
+
+
+def calibration_frame(settings: Settings) -> tuple[Image.Image, Window]:
+    """The game as it looks right now, or why it cannot be read."""
+    window = Window.matching(settings.title_matches, settings.process_matches)
+    log.info("Found %r at %dx%d", window.title, window.width, window.height)
+
+    frame = frame_of(window, settings.capture_method)
+    if blank(frame):
+        raise CaptureError(
+            "The captured frame is entirely black. Black Desert is probably in "
+            "Fullscreen Exclusive mode; switch it to Borderless Windowed."
+        )
+    return frame, window
+
+
+@dataclass(frozen=True)
+class Fit:
+    """How a fresh calibration fared against the very frame it was drawn on."""
+
+    confidence: float
+    reading: Reading
+
+    @property
+    def ok(self) -> bool:
+        return self.reading.understood
+
+    @property
+    def summary(self) -> str:
+        if self.ok:
+            return f"Read {self.reading.meters:.0f}m. Calibration looks good."
+        return (
+            f"Saved, but the number could not be read (OCR saw {self.reading.raw_text!r}). "
+            "Try again with a tighter box around the digits."
+        )
+
+
+def fit_calibration(
+    settings: Settings, frame: Image.Image, digits: Box, icon_box: Box, size: tuple[int, int]
+) -> Fit:
+    """Store the two boxes, then prove the marker can be found again from them."""
+    ICON.parent.mkdir(parents=True, exist_ok=True)
+    icon_box.crop(frame).save(ICON)
+    calibration = Calibration.between(digits, icon_box, left_slack=settings.left_slack, size=size)
+    calibration.save()
+    log.info("Saved calibration.json and %s", ICON.name)
+
+    marker = build_marker(settings, calibration, size)
+    sighting = marker.sighting(frame)
+    if sighting is None:
+        raise MarkerError(
+            "The icon could not be re-found in the same frame. Calibrate again "
+            "and box the icon more tightly."
+        )
+
+    readout = build_readout(settings)
+    _write_previews(frame, sighting, readout)
+    log.info("Icon re-found with confidence %.3f", sighting.confidence)
+    _report_noise_floor(settings, marker, frame, sighting)
+    return Fit(sighting.confidence, readout.reading(sighting.digits.crop(frame)))
 
 
 def scrub(settings: Settings, _args) -> int:
@@ -88,50 +150,19 @@ def windows(settings: Settings, _args) -> int:
 
 
 def calibrate(settings: Settings, _args) -> int:
-    window = Window.matching(settings.title_matches, settings.process_matches)
-    log.info("Found %r at %dx%d", window.title, window.width, window.height)
-
-    frame = frame_of(window, settings.capture_method)
-    if blank(frame):
-        log.error(
-            "The captured frame is entirely black. Black Desert is probably in "
-            "Fullscreen Exclusive mode; switch it to Borderless Windowed."
-        )
-        return 2
+    frame, window = calibration_frame(settings)
 
     boxes = digits_and_icon(frame)
     if boxes is None:
         log.info("Cancelled; nothing was saved.")
         return 1
 
-    digits, icon_box = boxes
-    icon_box.crop(frame).save(ICON)
-    calibration = Calibration.between(
-        digits, icon_box, left_slack=settings.left_slack, size=window.size
-    )
-    calibration.save()
-    log.info("Saved calibration.json and %s", ICON.name)
-
-    marker = build_marker(settings, calibration, window.size)
-    sighting = marker.sighting(frame)
-    if sighting is None:
-        log.error(
-            "The icon could not be re-found in the same frame. Re-run calibrate "
-            "and box the icon more tightly."
-        )
-        return 3
-
-    readout = build_readout(settings)
-    _write_previews(frame, sighting, readout)
-    log.info("Icon re-found with confidence %.3f", sighting.confidence)
-    _report_noise_floor(settings, marker, frame, sighting)
-
-    reading = readout.reading(sighting.digits.crop(frame))
-    if reading.understood:
-        log.info("Read %.0fm. Calibration looks good.", reading.meters)
+    fit = fit_calibration(settings, frame, *boxes, window.size)
+    if fit.ok:
+        log.info(fit.summary)
         return 0
 
-    log.warning("Could not read a distance. OCR returned: %r", reading.raw_text)
+    log.warning(fit.summary)
     log.warning(
         "Open debug/stencil.png. If the digits are not crisp black on white, "
         "adjust ocr.brightness_threshold and re-run. debug/annotated.png shows "
@@ -216,7 +247,7 @@ def _channel(name: str, settings: Settings):
     if name == "discord":
         return Discord(settings.webhook_url, settings.mention)
     if name == "desktop":
-        return Desktop(icon=ROOT / "assets" / "boat.ico")
+        return Desktop(icon=TRAY_ICON)
     raise ValueError(f"unknown channel {name!r}")
 
 
@@ -241,7 +272,8 @@ def test_notify(settings: Settings, _args) -> int:
     return 2
 
 
-def run(settings: Settings, args) -> int:
+def build_monitor(settings: Settings) -> Monitor:
+    """A monitor that follows config.toml as it changes on disk."""
     monitor = Monitor(
         settings,
         Calibration.load(),
@@ -252,7 +284,18 @@ def run(settings: Settings, args) -> int:
         samples_dir=SAMPLES,
     )
     monitor.reloads_from(CONFIG, reloader)
-    return monitor.run(once=args.once)
+    return monitor
+
+
+def run(settings: Settings, args) -> int:
+    return build_monitor(settings).run(once=args.once)
+
+
+def app(_settings: Settings | None, _args) -> int:
+    """Open the window. Watching starts by itself once set-up is complete."""
+    from .app import App
+
+    return App().run()
 
 
 def configure(_settings: Settings | None, _args) -> int:
@@ -308,17 +351,7 @@ def tray(settings: Settings, _args) -> int:
     """Run the monitor behind a system tray icon."""
     from .tray import Tray
 
-    monitor = Monitor(
-        settings,
-        Calibration.load(),
-        build_readout(settings),
-        build_outbox(settings),
-        build_voyage(settings),
-        working_dirs=(CAPTURES, DEBUG),
-        samples_dir=SAMPLES,
-    )
-    monitor.reloads_from(CONFIG, reloader)
-    return Tray(monitor, icon=ROOT / "assets" / "boat.ico", logs=LOGS).run()
+    return Tray(build_monitor(settings), logs=LOGS).run()
 
 
 def _annotated(frame: Image.Image, sighting: Sighting) -> Image.Image:

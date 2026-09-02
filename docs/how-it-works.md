@@ -157,8 +157,9 @@ the game's own UI.
 
 ## Calibrating
 
-Start an auto-route so the marker is on screen, then `.\calibrate.cmd`. You will
-be asked for two boxes:
+Start an auto-route so the marker is on screen, then press **Calibrate** in the
+window, or run `.\calibrate.cmd` from a checkout. You will be asked for two
+boxes:
 
 1. **The distance digits**, just the number. Not the icon.
 2. **The icon beside them**, boxed tightly. This becomes the template used to

@@ -36,13 +36,14 @@ this project asks people to attach to issues.
 
 ## Before you attach anything to an issue
 
-Run this instead of collecting files by hand:
+Press **Report** in the window instead of collecting files by hand. From a
+source checkout the same thing is:
 
 ```powershell
 .\scrub.cmd
 ```
 
-It writes one zip into `reports\`. It contains the log with every webhook token
+Either writes one zip into `reports\`. It contains the log with every webhook token
 and window title removed, the digit-crop samples, and your calibration. It does
 not contain `config.toml`, any whole window frame, or any window title.
 

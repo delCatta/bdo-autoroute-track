@@ -38,7 +38,10 @@ happens. I hope it helps you too.
   the running commentary.
 - **Lives in the tray.** The icon changes colour with the state, so a glance
   answers "how's it going?". Switch a channel off, pause, or change settings from
-  the menu, and changes apply without restarting.
+  the menu, and changes apply without restarting. Want more than a tooltip?
+  Double-click the icon for a window, dark like the game.
+- **One installer.** Download, run, done. No Python to install and no console
+  window, ever.
 - **Notices its own failures.** Three delivery failures in a row say so loudly.
   A monitor that has quietly stopped notifying looks exactly like one with
   nothing to report.
@@ -47,14 +50,36 @@ happens. I hope it helps you too.
 - **Any auto-route**, not just boats, because it is the same marker land auto-pathing
   uses.
 
+## What it looks like
+
+<div align="center">
+<img src="docs/images/window-watching.png" alt="The window while a route is under way" width="400">
+&nbsp;&nbsp;
+<img src="docs/images/window-first-run.png" alt="The window on a fresh install, with its two steps" width="400">
+</div>
+
+<div align="center">
+<img src="docs/images/settings.png" alt="The settings dialog" width="420">
+</div>
+
+Dark, because the game is dark and so is the Discord the alerts land in. The
+window on the left is what you see while a route is under way. The one on the
+right is a fresh install, and both of its buttons are the whole set-up.
+
 ## Install
 
-**[Download the latest release](https://github.com/delCatta/bdo-autoroute-track/releases/latest)**
-→ extract the ZIP anywhere → run `setup.cmd`. No git required.
+**[Download the installer](https://github.com/delCatta/bdo-autoroute-track/releases/latest)**,
+the file called `BDO-Autoroute-Track-Setup-<version>.exe`, and run it. It opens
+when it is done. No Python, no console, nothing to extract. It installs for your
+user only, so there is no admin prompt.
 
-Needs **Windows 10/11**, **Python 3.11 or 3.12** (`winget install -e --id
-Python.Python.3.12`, not 3.13, the OCR engine has no wheel for it), and Black
-Desert in **Borderless Windowed**.
+Needs **Windows 10/11** and Black Desert in **Borderless Windowed**.
+
+> **SmartScreen will probably say "Windows protected your PC"** the first time,
+> because the installer is new and not yet signed. Click **More info**, then
+> **Run anyway**. The source is public and CI builds the installer straight from
+> the tagged commit, so what you download is what is in this repo. A checksum
+> sits next to it on the release page.
 
 > **The marker has to be visible.** Everything is read from it, so keep it out
 > from under the game's own UI. **Pointing the camera down** keeps it
@@ -62,32 +87,41 @@ Desert in **Borderless Windowed**.
 > like Barter Information or the world map will hide it. You do *not* need the
 > game focused or in front; window capture reads its own content.
 
-> Use the `.cmd` files, not the `.ps1` ones. Windows ships PowerShell's execution
-> policy as `Restricted`, so `.\setup.ps1` fails with *"running scripts is
-> disabled on this system"*. Each `.cmd` runs its `.ps1` with a one-shot bypass
-> and changes nothing about your system.
-
 ## Quick start
 
-```powershell
-.\setup.cmd        # venv + dependencies, then opens Settings
-.\calibrate.cmd    # drag a box round the digits, then the icon
-.\tray.cmd         # go AFK
-```
+The window that opens has two steps, each with a button.
 
-No TOML editing needed. `setup.cmd` finishes by opening a **Settings** window
-for the webhook, where alerts go, and the main thresholds. It is on the tray menu
-too. **Saved changes apply to a running monitor straight away**, from the tray,
-from `settings.cmd`, or from editing `config.toml` in an editor. Nothing needs
-restarting.
+1. **Settings.** Where alerts go. Windows notifications work with nothing
+   filled in. For Discord, paste a webhook URL and press **Test**.
+2. **Calibrate.** With Black Desert on an auto-route and the marker on screen,
+   drag a box around the distance number, then one around the icon beside it.
+   Once only, unless you change resolution.
 
-`install-shortcut.cmd` puts it on your Desktop, starting the tray with no window
-in the way. Add `-Console` if you would rather have the poll log scrolling past,
-which is what you want when something is wrong.
+Then it watches. **Close the window and it keeps going** from the tray, where
+the boat changes colour with the state. Right-click for the switches, or
+double-click to bring the window back.
 
-Other commands: `run.cmd` (same monitor, in a console), `run.cmd --log` (record
-this run), `shot.cmd` (one look at what it reads), `test-notify.cmd`,
-`scrub.cmd` (a report safe to attach to an issue), `settings.cmd`.
+**Saved settings apply straight away.** Nothing needs restarting, whether you
+change them in the window, from the tray, or by editing `config.toml` in an
+editor. Both are under `%LOCALAPPDATA%\BDO Autoroute Track`, along with the
+calibration and the log, and an update or an uninstall leaves them alone.
+
+### Running from source instead
+
+Clone or download the source zip, then `setup.cmd`. It finds Python 3.11 or
+3.12, offers to install one with winget if there is none, and builds a `.venv`.
+Then `tray.cmd` for the icon alone, `run.cmd` for the same monitor in a console
+with the poll log scrolling past, or `python -m bdo_autoroute` for the window.
+
+Use the `.cmd` files, not the `.ps1` ones. Windows ships PowerShell's execution
+policy as `Restricted`, so `.\setup.ps1` fails with *"running scripts is
+disabled on this system"*. Each `.cmd` runs its `.ps1` with a one-shot bypass
+and changes nothing about your system.
+
+Other commands: `calibrate.cmd`, `settings.cmd`, `shot.cmd` (one look at what it
+reads), `test-notify.cmd`, `scrub.cmd` (a report safe to attach to an issue),
+`install-shortcut.cmd` (a Desktop shortcut to the tray), and `build-exe.cmd`,
+which builds the installer.
 
 ## Before you point it at a shared server
 

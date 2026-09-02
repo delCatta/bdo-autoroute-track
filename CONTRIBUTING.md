@@ -11,10 +11,11 @@ You do not need to write any code for the first three.
 
 ### 📦 First, never attach files by hand
 
-Run `.\scrub.cmd`. It writes one zip into `reports\` holding the log with every
-webhook token and window title removed, the digit-crop samples, and your
-calibration. It leaves out `config.toml`, whole window frames, and every window
-title.
+Press **Report** in the window, or run `.\scrub.cmd` from a source checkout.
+Either writes one zip into `reports\` holding the log with every webhook token
+and window title removed, the digit-crop samples, and your calibration. It
+leaves out `config.toml`, whole window frames, and every window title. The
+window opens the folder for you.
 
 **This matters.** A Discord webhook URL is a bearer credential, and before
 version 0.3.1 a failed delivery wrote yours straight into `logs/autoroute.log`.
@@ -42,9 +43,11 @@ readings are still occasionally wrong.
 
 If you hit it:
 
-1. set `logging.to_file = true` in `config.toml`, or run `.\run.cmd --log`
+1. switch on **Write a log file** in Settings (the installed exe writes one
+   regardless), or run `.\run.cmd --log` from a checkout
 2. play normally until you see a wrong number
-3. run `.\scrub.cmd` and attach the zip it writes into `reports\`
+3. press **Report** in the window, or run `.\scrub.cmd`, and attach the zip it
+   writes into `reports\`
 
 Those samples are PNG crops with a JSON sidecar recording exactly what OCR
 returned. That is the evidence needed to fix it properly. An earlier attempt
@@ -59,7 +62,7 @@ client language is enough to start.
 
 Especially an alert that says something untrue, a state that seems stuck in the
 wrong place, or a notification that never arrives. Attach the zip from
-`.\scrub.cmd` if you have one.
+**Report** or `.\scrub.cmd` if you have one.
 
 ## Running it from source
 
@@ -73,6 +76,10 @@ cd bdo-autoroute-track
 
 Needs Windows and Python 3.11 or 3.12, not 3.13, which the OCR engine has no
 wheel for. `setup.cmd` checks this for you.
+
+`python -m bdo_autoroute` opens the window on the checkout's own config and
+calibration. `.\build-exe.cmd` builds the same installer CI attaches to a
+release, into `dist\`. It needs Inno Setup and offers to install it with winget.
 
 ## Before opening a pull request
 

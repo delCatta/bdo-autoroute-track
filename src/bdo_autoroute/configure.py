@@ -10,15 +10,15 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import messagebox, ttk
 
+from . import ui
 from .configfile import ConfigFile
 from .settings import (
     CONFIG,
     EXAMPLE_CONFIG,
-    SCREENSHOT_MODES,
     Settings,
     is_webhook,
     webhook_hosts_in_words,
@@ -32,11 +32,16 @@ log = logging.getLogger(__name__)
 MODE_LABELS = {"verbose": "Everything", "important": "Important only"}
 MODE_VALUES = {label: mode for mode, label in MODE_LABELS.items()}
 
+SCREENSHOT_LABELS = {"full": "Full window", "marker": "Marker only", "none": "Text only"}
+SCREENSHOT_VALUES = {label: mode for mode, label in SCREENSHOT_LABELS.items()}
 SCREENSHOT_EXPLAINED = {
-    "full": "Full window, includes chat and your character name",
-    "marker": "Just the marker, no chat, safe for shared servers",
-    "none": "Text only",
+    "full": "The whole game window, chat and your character name included.",
+    "marker": "Just the marker. Nothing readable, so safe for a shared server.",
+    "none": "Words only.",
 }
+
+WEBHOOK_HINT = "In Discord: Edit Channel > Integrations > Webhooks > New Webhook > Copy URL"
+MENTION_HINT = "<@your-user-id> makes your phone buzz. Leave blank for silent."
 
 
 def _not_a_webhook() -> str:
@@ -46,8 +51,8 @@ def _not_a_webhook() -> str:
     since a discordapp.com webhook validates and works.
     """
     return (
-        "That does not look like a webhook URL.\n"
-        f"They start with https://{webhook_hosts_in_words()},\n"
+        "That does not look like a webhook URL. "
+        f"They start with https://{webhook_hosts_in_words()}, "
         "followed by /api/webhooks/"
     )
 
@@ -55,6 +60,7 @@ def _not_a_webhook() -> str:
 def ensure_config(path: Path = CONFIG) -> Path:
     """A config to edit, copied from the example the first time."""
     if not path.exists() and EXAMPLE_CONFIG.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(EXAMPLE_CONFIG.read_text(encoding="utf-8"), encoding="utf-8")
     return path
 
@@ -88,19 +94,23 @@ def open_in_editor(path: Path) -> None:
 class SettingsWindow:
     """The handful of settings worth a dialog."""
 
-    def __init__(
-        self,
-        path: Path = CONFIG,
-        *,
-        parent: tk.Misc | None = None,
-    ) -> None:
+    def __init__(self, path: Path = CONFIG, *, parent=None) -> None:
+        import customtkinter as ctk
+
+        ui.dark()
+        self._ctk = ctk
         self._path = ensure_config(path)
         self._config = ConfigFile(self._path)
+        self._parent = parent
         self._saved = False
+        self.outcome = ""
 
-        self._root = tk.Toplevel(parent) if parent else tk.Tk()
-        self._root.title("BDO Autoroute Track - settings")
+        self._root = ctk.CTkToplevel(parent) if parent is not None else ctk.CTk()
+        self._root.configure(fg_color=ui.WINDOW)
+        self._root.title("Settings")
         self._root.resizable(False, False)
+        ui.brand(self._root)
+        self._mailbox = ui.Mailbox(self._root)
 
         current = self._current()
         self._webhook = tk.StringVar(value=current.webhook_url)
@@ -109,17 +119,25 @@ class SettingsWindow:
         self._to_desktop = tk.BooleanVar(value="desktop" in current.channels)
         self._discord_mode = tk.StringVar(value=MODE_LABELS[current.discord_mode])
         self._desktop_mode = tk.StringVar(value=MODE_LABELS[current.desktop_mode])
-        self._screenshot = tk.StringVar(value=current.screenshot)
+        self._screenshot = tk.StringVar(value=SCREENSHOT_LABELS[current.screenshot])
         self._poll = tk.StringVar(value=str(current.poll_interval_seconds))
         self._arrival = tk.StringVar(value=str(int(current.arrival_threshold_m)))
         self._stuck = tk.StringVar(value=str(int(current.stuck_after_seconds)))
         self._logging = tk.BooleanVar(value=current.log_to_file)
 
         self._build()
+        if parent is not None:
+            self._root.transient(parent)
+            self._root.grab_set()
+        self._root.lift()
+        self._root.focus_force()
 
     def show(self) -> bool:
         """Run the dialog. True if the settings were saved."""
-        self._root.mainloop()
+        if self._parent is not None:
+            self._parent.wait_window(self._root)
+        else:
+            self._root.mainloop()
         return self._saved
 
     def _current(self) -> Settings:
@@ -132,129 +150,170 @@ class SettingsWindow:
     # -- layout ----------------------------------------------------------
 
     def _build(self) -> None:
-        frame = ttk.Frame(self._root, padding=14)
-        frame.grid(sticky="nsew")
-        row = 0
+        ctk = self._ctk
+        body = ctk.CTkFrame(self._root, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=24, pady=(18, 20))
 
-        ttk.Label(frame, text="Where alerts go", font=("Segoe UI", 10, "bold")).grid(
-            row=row, column=0, columnspan=3, sticky="w", pady=(0, 6)
+        self._alerts(self._section(body, "Alerts"))
+        self._discord(self._section(body, "Discord"))
+        self._screenshots(self._section(body, "Screenshot in alerts"))
+        self._timing(self._section(body, "Timing"))
+
+        ctk.CTkSwitch(
+            body,
+            text="Write a log file, for chasing a misread",
+            variable=self._logging,
+            font=ui.font(),
+            progress_color=ui.ACCENT,
+        ).pack(anchor="w", pady=(14, 0))
+
+        self._notice = ctk.CTkLabel(
+            body, text="", text_color=ui.MUTED, font=ui.font(12), wraplength=560, justify="left"
         )
-        row += 1
+        self._notice.pack(anchor="w", pady=(14, 0))
 
-        for label, enabled, mode, hint in (
-            ("Discord", self._to_discord, self._discord_mode, "a phone alert is cheap to ignore"),
-            (
-                "Windows notification",
-                self._to_desktop,
-                self._desktop_mode,
-                "a toast every minute teaches you to dismiss them",
-            ),
+        buttons = ctk.CTkFrame(body, fg_color="transparent")
+        buttons.pack(fill="x", pady=(10, 0))
+        self._quiet_button(buttons, "Open config file", self._open_file).pack(side="left")
+        self._accent_button(buttons, "Save", self._save).pack(side="right")
+        self._quiet_button(buttons, "Cancel", self._root.destroy).pack(side="right", padx=(0, 8))
+
+    def _section(self, parent, title: str):
+        ctk = self._ctk
+        ctk.CTkLabel(parent, text=title, font=ui.font(12, weight="bold"), text_color=ui.MUTED).pack(
+            anchor="w", pady=(12, 4)
+        )
+        card = ctk.CTkFrame(parent, fg_color=ui.CARD, corner_radius=10)
+        card.pack(fill="x")
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.pack(fill="x", padx=14, pady=12)
+        return inner
+
+    def _alerts(self, card) -> None:
+        ctk = self._ctk
+        for label, enabled, mode in (
+            ("Discord", self._to_discord, self._discord_mode),
+            ("Windows notifications", self._to_desktop, self._desktop_mode),
         ):
-            ttk.Checkbutton(frame, text=label, variable=enabled).grid(
-                row=row, column=0, sticky="w"
-            )
-            ttk.Combobox(
-                frame,
-                textvariable=mode,
+            row = ctk.CTkFrame(card, fg_color="transparent")
+            row.pack(fill="x", pady=3)
+            ctk.CTkSwitch(
+                row, text=label, variable=enabled, font=ui.font(), progress_color=ui.ACCENT
+            ).pack(side="left")
+            ctk.CTkSegmentedButton(
+                row,
                 values=list(MODE_LABELS.values()),
-                state="readonly",
-                width=16,
-            ).grid(row=row, column=1, sticky="w")
-            ttk.Label(frame, text=hint, foreground="#666").grid(
-                row=row, column=2, sticky="w"
-            )
-            row += 1
+                variable=mode,
+                font=ui.font(12),
+                selected_color=ui.ACCENT,
+                selected_hover_color=ui.ACCENT_HOVER,
+                unselected_color=ui.FIELD,
+                unselected_hover_color=ui.QUIET,
+            ).pack(side="right")
+        self._hint(card, "Important only skips the heartbeat and sends what needs you.")
 
-        ttk.Label(
-            frame,
-            text="Important only skips the heartbeat and sends what needs you.",
-            foreground="#666",
-        ).grid(row=row, column=0, columnspan=3, sticky="w", pady=(2, 0))
-        row += 1
-
-        ttk.Label(frame, text="Webhook URL").grid(row=row, column=0, sticky="w", pady=(10, 0))
-        ttk.Entry(frame, textvariable=self._webhook, width=52).grid(
-            row=row, column=1, sticky="we", pady=(10, 0)
+    def _discord(self, card) -> None:
+        ctk = self._ctk
+        row = ctk.CTkFrame(card, fg_color="transparent")
+        row.pack(fill="x")
+        self._entry(row, self._webhook, "https://discord.com/api/webhooks/...").pack(
+            side="left", fill="x", expand=True
         )
-        ttk.Button(frame, text="Test", command=self._test).grid(
-            row=row, column=2, sticky="w", padx=(6, 0), pady=(10, 0)
-        )
-        row += 1
-        ttk.Label(
-            frame,
-            text="Discord: Edit Channel > Integrations > Webhooks > New Webhook > Copy URL",
-            foreground="#666",
-        ).grid(row=row, column=1, columnspan=2, sticky="w")
-        row += 1
+        self._quiet_button(row, "Test", self._test, width=70).pack(side="left", padx=(8, 0))
+        self._hint(card, WEBHOOK_HINT)
 
-        ttk.Label(frame, text="Mention").grid(row=row, column=0, sticky="w", pady=(8, 0))
-        ttk.Entry(frame, textvariable=self._mention, width=52).grid(
-            row=row, column=1, columnspan=2, sticky="we", pady=(8, 0)
+        ctk.CTkLabel(card, text="Mention", font=ui.font(12), text_color=ui.MUTED).pack(
+            anchor="w", pady=(10, 2)
         )
-        row += 1
-        ttk.Label(
-            frame,
-            text="<@your-user-id> so alerts buzz your phone. Leave blank for silent.",
-            foreground="#666",
-        ).grid(row=row, column=1, columnspan=2, sticky="w")
-        row += 1
+        self._entry(card, self._mention, "<@123456789012345678>").pack(fill="x")
+        self._hint(card, MENTION_HINT)
 
-        ttk.Separator(frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=3, sticky="we", pady=12
-        )
-        row += 1
+    def _screenshots(self, card) -> None:
+        ctk = self._ctk
+        ctk.CTkSegmentedButton(
+            card,
+            values=list(SCREENSHOT_LABELS.values()),
+            variable=self._screenshot,
+            command=lambda _choice: self._explain_screenshot(),
+            font=ui.font(12),
+            selected_color=ui.ACCENT,
+            selected_hover_color=ui.ACCENT_HOVER,
+            unselected_color=ui.FIELD,
+            unselected_hover_color=ui.QUIET,
+        ).pack(anchor="w")
+        self._screenshot_hint = self._hint(card, "")
+        self._explain_screenshot()
 
-        ttk.Label(frame, text="Screenshot", font=("Segoe UI", 10, "bold")).grid(
-            row=row, column=0, columnspan=3, sticky="w", pady=(0, 4)
-        )
-        row += 1
-        for mode in SCREENSHOT_MODES:
-            ttk.Radiobutton(
-                frame,
-                text=SCREENSHOT_EXPLAINED[mode],
-                value=mode,
-                variable=self._screenshot,
-            ).grid(row=row, column=0, columnspan=3, sticky="w")
-            row += 1
-
-        ttk.Separator(frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=3, sticky="we", pady=12
-        )
-        row += 1
-
-        for label, variable, hint in (
-            ("Check every (seconds)", self._poll, "30 is a good default"),
-            ("Arrived under (metres)", self._arrival, "70, it rarely reaches 0"),
-            ("Stuck after (seconds)", self._stuck, "180 before it calls it stuck"),
+    def _timing(self, card) -> None:
+        ctk = self._ctk
+        for label, variable, unit, hint in (
+            ("Check every", self._poll, "seconds", "30 is a good default"),
+            ("Arrived under", self._arrival, "metres", "70, it rarely reaches 0"),
+            ("Stuck after", self._stuck, "seconds", "180 before it calls it stuck"),
         ):
-            ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=2)
-            ttk.Entry(frame, textvariable=variable, width=8).grid(row=row, column=1, sticky="w")
-            ttk.Label(frame, text=hint, foreground="#666").grid(row=row, column=2, sticky="w")
-            row += 1
+            row = ctk.CTkFrame(card, fg_color="transparent")
+            row.pack(fill="x", pady=3)
+            ctk.CTkLabel(row, text=label, font=ui.font(), width=120, anchor="w").pack(side="left")
+            self._entry(row, variable, "", width=70).pack(side="left")
+            ctk.CTkLabel(row, text=unit, font=ui.font(12), text_color=ui.MUTED).pack(
+                side="left", padx=(8, 0)
+            )
+            ctk.CTkLabel(row, text=hint, font=ui.font(12), text_color=ui.MUTED).pack(side="right")
 
-        ttk.Separator(frame, orient="horizontal").grid(
-            row=row, column=0, columnspan=3, sticky="we", pady=12
+    def _entry(self, parent, variable: tk.StringVar, placeholder: str, *, width: int = 140):
+        return self._ctk.CTkEntry(
+            parent,
+            textvariable=variable,
+            placeholder_text=placeholder,
+            width=width,
+            height=32,
+            font=ui.font(),
+            fg_color=ui.FIELD,
+            border_color=ui.FIELD_BORDER,
+            corner_radius=6,
         )
-        row += 1
-        ttk.Checkbutton(
-            frame, text="Write a log file", variable=self._logging
-        ).grid(row=row, column=0, columnspan=2, sticky="w")
-        ttk.Label(
-            frame, text="logs/autoroute.log, turn on to chase a misread", foreground="#666"
-        ).grid(row=row, column=2, sticky="w")
-        row += 1
 
-        buttons = ttk.Frame(frame)
-        buttons.grid(row=row, column=0, columnspan=3, sticky="e", pady=(16, 0))
-        ttk.Button(buttons, text="Open config file", command=self._open_file).pack(
-            side="left", padx=(0, 8)
+    def _hint(self, parent, text: str):
+        label = self._ctk.CTkLabel(
+            parent, text=text, font=ui.font(12), text_color=ui.MUTED, wraplength=540, justify="left"
         )
-        ttk.Button(buttons, text="Cancel", command=self._root.destroy).pack(
-            side="left", padx=(0, 8)
+        label.pack(anchor="w", pady=(4, 0))
+        return label
+
+    def _quiet_button(self, parent, text: str, command, *, width: int = 130):
+        return self._ctk.CTkButton(
+            parent,
+            text=text,
+            command=command,
+            width=width,
+            height=34,
+            font=ui.font(),
+            fg_color=ui.QUIET,
+            hover_color=ui.QUIET_HOVER,
+            corner_radius=6,
         )
-        ttk.Button(buttons, text="Save", command=self._save).pack(side="left")
+
+    def _accent_button(self, parent, text: str, command, *, width: int = 110):
+        return self._ctk.CTkButton(
+            parent,
+            text=text,
+            command=command,
+            width=width,
+            height=34,
+            font=ui.font(weight="bold"),
+            fg_color=ui.ACCENT,
+            hover_color=ui.ACCENT_HOVER,
+            corner_radius=6,
+        )
 
     # -- actions ---------------------------------------------------------
+
+    def _explain_screenshot(self) -> None:
+        mode = SCREENSHOT_VALUES.get(self._screenshot.get(), "full")
+        self._screenshot_hint.configure(text=SCREENSHOT_EXPLAINED[mode])
+
+    def _say(self, text: str, colour: str = ui.MUTED) -> None:
+        self._notice.configure(text=text, text_color=colour)
 
     def _channels(self) -> list[str]:
         chosen = []
@@ -272,7 +331,7 @@ class SettingsWindow:
         webhook = self._webhook.get().strip()
         if "discord" in self._channels():
             if not webhook:
-                return "Discord needs a webhook URL, or untick Discord."
+                return "Discord needs a webhook URL, or switch Discord off."
             if not is_webhook(webhook):
                 return _not_a_webhook()
 
@@ -289,23 +348,32 @@ class SettingsWindow:
         return None
 
     def _test(self) -> None:
+        """Send a test alert without freezing the window while Discord answers."""
         from .alerts import Alert
         from .discord import Discord
 
         webhook = self._webhook.get().strip()
+        mention = self._mention.get().strip()
         if not is_webhook(webhook):
-            messagebox.showwarning("Test", _not_a_webhook())
+            self._say(_not_a_webhook(), ui.WARNING)
             return
-        try:
-            sent = Discord(webhook, self._mention.get().strip()).deliver(Alert.test_message())
-        except Exception as exc:
-            messagebox.showerror("Test", f"Could not send. {scrubbed(str(exc), webhook)}")
-            return
+        self._say("Sending a test alert...")
 
-        if sent:
-            messagebox.showinfo("Test", "Sent. Check your Discord channel.")
-        else:
-            messagebox.showerror("Test", "Discord rejected it. Is the URL still valid?")
+        def send() -> None:
+            try:
+                sent = Discord(webhook, mention).deliver(Alert.test_message())
+            except Exception as exc:
+                reason = scrubbed(str(exc), webhook)
+                self._mailbox.post(lambda: self._say(f"Could not send. {reason}", ui.DANGER))
+                return
+            if sent:
+                self._mailbox.post(lambda: self._say("Sent. Check your Discord channel.", ui.GOOD))
+            else:
+                self._mailbox.post(
+                    lambda: self._say("Discord rejected it. Is the URL still valid?", ui.DANGER)
+                )
+
+        threading.Thread(target=send, daemon=True).start()
 
     def _open_file(self) -> None:
         open_in_editor(self._path)
@@ -313,7 +381,7 @@ class SettingsWindow:
     def _save(self) -> None:
         complaint = self._complaint()
         if complaint:
-            messagebox.showwarning("Settings", complaint)
+            self._say(complaint, ui.WARNING)
             return
 
         self._config.set("notify", "channels", self._channels())
@@ -323,7 +391,7 @@ class SettingsWindow:
         self._config.set("notify", "mention", self._mention.get().strip())
         self._config.set("notify", "discord_mode", MODE_VALUES[self._discord_mode.get()])
         self._config.set("notify", "desktop_mode", MODE_VALUES[self._desktop_mode.get()])
-        self._config.set("notify", "screenshot", self._screenshot.get())
+        self._config.set("notify", "screenshot", SCREENSHOT_VALUES[self._screenshot.get()])
         self._config.set("capture", "poll_interval_seconds", int(self._poll.get()))
         self._config.set("detect", "arrival_threshold_m", float(self._arrival.get()))
         self._config.set("detect", "stuck_after_seconds", int(self._stuck.get()))
@@ -331,7 +399,8 @@ class SettingsWindow:
         self._config.save()
 
         self._saved = True
-        log.info("Settings saved to %s", self._path)
         stored = "encrypted for this Windows account" if available() else "stored as plain text"
-        messagebox.showinfo("Settings", f"Saved. The webhook is {stored}.")
+        self.outcome = f"Settings saved. The webhook is {stored}."
+        log.info("Settings saved to %s", self._path)
+        self._mailbox.close()
         self._root.destroy()
